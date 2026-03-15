@@ -1,18 +1,16 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "@/lib/router";
 import type { Issue } from "@paperclipai/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { agentsApi } from "../api/agents";
 import { authApi } from "../api/auth";
-import { executionWorkspacesApi } from "../api/execution-workspaces";
-import { instanceSettingsApi } from "../api/instanceSettings";
 import { issuesApi } from "../api/issues";
 import { projectsApi } from "../api/projects";
 import { useCompany } from "../context/CompanyContext";
 import { queryKeys } from "../lib/queryKeys";
 import { useProjectOrder } from "../hooks/useProjectOrder";
 import { getRecentAssigneeIds, sortAgentsByRecency, trackRecentAssignee } from "../lib/recent-assignees";
-import { formatAssigneeUserLabel } from "../lib/assignees";
 import { StatusIcon } from "./StatusIcon";
 import { PriorityIcon } from "./PriorityIcon";
 import { Identity } from "./Identity";
@@ -20,38 +18,11 @@ import { formatDate, cn, projectUrl } from "../lib/utils";
 import { timeAgo } from "../lib/timeAgo";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { User, Hexagon, ArrowUpRight, Tag, Plus, Trash2, Copy, Check } from "lucide-react";
+import { User, Hexagon, ArrowUpRight, Tag, Plus, Trash2 } from "lucide-react";
 import { AgentIcon } from "./AgentIconPicker";
 
-const EXECUTION_WORKSPACE_OPTIONS = [
-  { value: "shared_workspace", label: "Project default" },
-  { value: "isolated_workspace", label: "New isolated workspace" },
-  { value: "reuse_existing", label: "Reuse existing workspace" },
-] as const;
-
-function defaultProjectWorkspaceIdForProject(project: {
-  workspaces?: Array<{ id: string; isPrimary: boolean }>;
-  executionWorkspacePolicy?: { defaultProjectWorkspaceId?: string | null } | null;
-} | null | undefined) {
-  if (!project) return null;
-  return project.executionWorkspacePolicy?.defaultProjectWorkspaceId
-    ?? project.workspaces?.find((workspace) => workspace.isPrimary)?.id
-    ?? project.workspaces?.[0]?.id
-    ?? null;
-}
-
-function defaultExecutionWorkspaceModeForProject(project: { executionWorkspacePolicy?: { enabled?: boolean; defaultMode?: string | null } | null } | null | undefined) {
-  const defaultMode = project?.executionWorkspacePolicy?.enabled ? project.executionWorkspacePolicy.defaultMode : null;
-  if (defaultMode === "isolated_workspace" || defaultMode === "operator_branch") return defaultMode;
-  if (defaultMode === "adapter_default") return "agent_default";
-  return "shared_workspace";
-}
-
-function issueModeForExistingWorkspace(mode: string | null | undefined) {
-  if (mode === "isolated_workspace" || mode === "operator_branch" || mode === "shared_workspace") return mode;
-  if (mode === "adapter_managed" || mode === "cloud_sandbox") return "agent_default";
-  return "shared_workspace";
-}
+// TODO(issue-worktree-support): re-enable this UI once the workflow is ready to ship.
+const SHOW_EXPERIMENTAL_ISSUE_WORKTREE_UI = false;
 
 interface IssuePropertiesProps {
   issue: Issue;
@@ -130,50 +101,8 @@ function PropertyPicker({
   );
 }
 
-/** Splits a string at `/` and `-` boundaries, inserting <wbr> for natural line breaks. */
-function BreakablePath({ text }: { text: string }) {
-  const parts: React.ReactNode[] = [];
-  // Split on path separators and hyphens, keeping them in the output
-  const segments = text.split(/(?<=[\/-])/);
-  for (let i = 0; i < segments.length; i++) {
-    if (i > 0) parts.push(<wbr key={i} />);
-    parts.push(segments[i]);
-  }
-  return <>{parts}</>;
-}
-
-/** Displays a value with a copy-to-clipboard icon and "Copied!" feedback. */
-function CopyableValue({ value, label, mono, className }: { value: string; label?: string; mono?: boolean; className?: string }) {
-  const [copied, setCopied] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const handleCopy = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(value);
-      setCopied(true);
-      clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => setCopied(false), 1500);
-    } catch { /* noop */ }
-  }, [value]);
-
-  return (
-    <div className={cn("flex items-start gap-1 group", className)}>
-      <span className="min-w-0" style={{ overflowWrap: "anywhere" }}>
-        {label && <span className="text-muted-foreground">{label} </span>}
-        <span className={mono ? "font-mono" : undefined}><BreakablePath text={value} /></span>
-      </span>
-      <button
-        type="button"
-        className="shrink-0 mt-0.5 p-0.5 rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 focus:opacity-100"
-        onClick={handleCopy}
-        title={copied ? "Copied!" : "Copy to clipboard"}
-      >
-        {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
-      </button>
-    </div>
-  );
-}
-
 export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProps) {
+  const { t } = useTranslation();
   const { selectedCompanyId } = useCompany();
   const queryClient = useQueryClient();
   const companyId = issue.companyId ?? selectedCompanyId;
@@ -190,10 +119,6 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
     queryKey: queryKeys.auth.session,
     queryFn: () => authApi.getSession(),
   });
-  const { data: experimentalSettings } = useQuery({
-    queryKey: queryKeys.instance.experimentalSettings,
-    queryFn: () => instanceSettingsApi.getExperimental(),
-  });
   const currentUserId = session?.user?.id ?? session?.session?.userId;
 
   const { data: agents } = useQuery({
@@ -207,12 +132,8 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
     queryFn: () => projectsApi.list(companyId!),
     enabled: !!companyId,
   });
-  const activeProjects = useMemo(
-    () => (projects ?? []).filter((p) => !p.archivedAt || p.id === issue.projectId),
-    [projects, issue.projectId],
-  );
   const { orderedProjects } = useProjectOrder({
-    projects: activeProjects,
+    projects: projects ?? [],
     companyId,
     userId: currentUserId,
   });
@@ -256,51 +177,22 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
   };
 
   const projectName = (id: string | null) => {
-    if (!id) return id?.slice(0, 8) ?? "None";
+    if (!id) return id?.slice(0, 8) ?? t('issue.none');
     const project = orderedProjects.find((p) => p.id === id);
     return project?.name ?? id.slice(0, 8);
   };
   const currentProject = issue.projectId
     ? orderedProjects.find((project) => project.id === issue.projectId) ?? null
     : null;
-  const currentProjectExecutionWorkspacePolicy =
-    experimentalSettings?.enableIsolatedWorkspaces === true
-      ? currentProject?.executionWorkspacePolicy ?? null
-      : null;
+  const currentProjectExecutionWorkspacePolicy = SHOW_EXPERIMENTAL_ISSUE_WORKTREE_UI
+    ? currentProject?.executionWorkspacePolicy ?? null
+    : null;
   const currentProjectSupportsExecutionWorkspace = Boolean(currentProjectExecutionWorkspacePolicy?.enabled);
-  const currentExecutionWorkspaceSelection =
-    issue.executionWorkspacePreference
-    ?? issue.executionWorkspaceSettings?.mode
-    ?? defaultExecutionWorkspaceModeForProject(currentProject);
-  const { data: reusableExecutionWorkspaces } = useQuery({
-    queryKey: queryKeys.executionWorkspaces.list(companyId!, {
-      projectId: issue.projectId ?? undefined,
-      projectWorkspaceId: issue.projectWorkspaceId ?? undefined,
-      reuseEligible: true,
-    }),
-    queryFn: () =>
-      executionWorkspacesApi.list(companyId!, {
-        projectId: issue.projectId ?? undefined,
-        projectWorkspaceId: issue.projectWorkspaceId ?? undefined,
-        reuseEligible: true,
-      }),
-    enabled: Boolean(companyId) && Boolean(issue.projectId),
-  });
-  const deduplicatedReusableWorkspaces = useMemo(() => {
-    const workspaces = reusableExecutionWorkspaces ?? [];
-    const seen = new Map<string, typeof workspaces[number]>();
-    for (const ws of workspaces) {
-      const key = ws.cwd ?? ws.id;
-      const existing = seen.get(key);
-      if (!existing || new Date(ws.lastUsedAt) > new Date(existing.lastUsedAt)) {
-        seen.set(key, ws);
-      }
-    }
-    return Array.from(seen.values());
-  }, [reusableExecutionWorkspaces]);
-  const selectedReusableExecutionWorkspace = deduplicatedReusableWorkspaces.find(
-    (workspace) => workspace.id === issue.executionWorkspaceId,
-  );
+  const usesIsolatedExecutionWorkspace = issue.executionWorkspaceSettings?.mode === "isolated"
+    ? true
+    : issue.executionWorkspaceSettings?.mode === "project_primary"
+      ? false
+      : currentProjectExecutionWorkspacePolicy?.defaultMode === "isolated";
   const projectLink = (id: string | null) => {
     if (!id) return null;
     const project = projects?.find((p) => p.id === id) ?? null;
@@ -316,7 +208,14 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
   const assignee = issue.assigneeAgentId
     ? agents?.find((a) => a.id === issue.assigneeAgentId)
     : null;
-  const userLabel = (userId: string | null | undefined) => formatAssigneeUserLabel(userId, currentUserId);
+   const userLabel = (userId: string | null | undefined) =>
+     userId
+       ? userId === "local-board"
+         ? t('issue.board')
+         : currentUserId && userId === currentUserId
+           ? t('issue.me')
+           : userId.slice(0, 5)
+       : null;
   const assigneeUserLabel = userLabel(issue.assigneeUserId);
   const creatorUserLabel = userLabel(issue.createdByUserId);
 
@@ -339,22 +238,22 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
         <span className="text-xs text-muted-foreground">+{(issue.labels ?? []).length - 3}</span>
       )}
     </div>
-  ) : (
-    <>
-      <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-      <span className="text-sm text-muted-foreground">No labels</span>
-    </>
-  );
+   ) : (
+     <>
+       <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+       <span className="text-sm text-muted-foreground">{t('issue.noLabels')}</span>
+     </>
+   );
 
   const labelsContent = (
     <>
-      <input
-        className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
-        placeholder="Search labels..."
-        value={labelSearch}
-        onChange={(e) => setLabelSearch(e.target.value)}
-        autoFocus={!inline}
-      />
+       <input
+         className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
+         placeholder={t('issue.searchLabels')}
+         value={labelSearch}
+         onChange={(e) => setLabelSearch(e.target.value)}
+         autoFocus={!inline}
+       />
       <div className="max-h-44 overflow-y-auto overscroll-contain space-y-0.5">
         {(labels ?? [])
           .filter((label) => {
@@ -395,26 +294,26 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
             value={newLabelColor}
             onChange={(e) => setNewLabelColor(e.target.value)}
           />
-          <input
-            className="flex-1 px-2 py-1.5 text-xs bg-transparent outline-none rounded placeholder:text-muted-foreground/50"
-            placeholder="New label"
-            value={newLabelName}
-            onChange={(e) => setNewLabelName(e.target.value)}
-          />
+           <input
+             className="flex-1 px-2 py-1.5 text-xs bg-transparent outline-none rounded placeholder:text-muted-foreground/50"
+             placeholder={t('issue.newLabel')}
+             value={newLabelName}
+             onChange={(e) => setNewLabelName(e.target.value)}
+           />
         </div>
-        <button
-          className="flex items-center justify-center gap-1.5 w-full px-2 py-1.5 text-xs rounded border border-border hover:bg-accent/50 disabled:opacity-50"
-          disabled={!newLabelName.trim() || createLabel.isPending}
-          onClick={() =>
-            createLabel.mutate({
-              name: newLabelName.trim(),
-              color: newLabelColor,
-            })
-          }
-        >
-          <Plus className="h-3 w-3" />
-          {createLabel.isPending ? "Creating…" : "Create label"}
-        </button>
+         <button
+           className="flex items-center justify-center gap-1.5 w-full px-2 py-1.5 text-xs rounded border border-border hover:bg-accent/50 disabled:opacity-50"
+           disabled={!newLabelName.trim() || createLabel.isPending}
+           onClick={() =>
+             createLabel.mutate({
+               name: newLabelName.trim(),
+               color: newLabelColor,
+             })
+           }
+         >
+           <Plus className="h-3 w-3" />
+           {createLabel.isPending ? t('issue.creatingLabel') : t('issue.createLabel')}
+         </button>
       </div>
     </>
   );
@@ -426,61 +325,46 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
       <User className="h-3.5 w-3.5 text-muted-foreground" />
       <span className="text-sm">{assigneeUserLabel}</span>
     </>
-  ) : (
-    <>
-      <User className="h-3.5 w-3.5 text-muted-foreground" />
-      <span className="text-sm text-muted-foreground">Unassigned</span>
-    </>
-  );
+   ) : (
+     <>
+       <User className="h-3.5 w-3.5 text-muted-foreground" />
+       <span className="text-sm text-muted-foreground">{t('issue.unassigned')}</span>
+     </>
+   );
 
   const assigneeContent = (
     <>
-      <input
-        className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
-        placeholder="Search assignees..."
-        value={assigneeSearch}
-        onChange={(e) => setAssigneeSearch(e.target.value)}
-        autoFocus={!inline}
-      />
+       <input
+         className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
+         placeholder={t('issue.searchAssignees')}
+         value={assigneeSearch}
+         onChange={(e) => setAssigneeSearch(e.target.value)}
+         autoFocus={!inline}
+       />
       <div className="max-h-48 overflow-y-auto overscroll-contain">
-        <button
-          className={cn(
-            "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
-            !issue.assigneeAgentId && !issue.assigneeUserId && "bg-accent"
-          )}
-          onClick={() => { onUpdate({ assigneeAgentId: null, assigneeUserId: null }); setAssigneeOpen(false); }}
-        >
-          No assignee
-        </button>
-        {currentUserId && (
-          <button
-            className={cn(
-              "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
-              issue.assigneeUserId === currentUserId && "bg-accent",
-            )}
-            onClick={() => {
-              onUpdate({ assigneeAgentId: null, assigneeUserId: currentUserId });
-              setAssigneeOpen(false);
-            }}
-          >
-            <User className="h-3 w-3 shrink-0 text-muted-foreground" />
-            Assign to me
-          </button>
-        )}
-        {issue.createdByUserId && issue.createdByUserId !== currentUserId && (
-          <button
-            className={cn(
-              "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
-              issue.assigneeUserId === issue.createdByUserId && "bg-accent",
-            )}
-            onClick={() => {
-              onUpdate({ assigneeAgentId: null, assigneeUserId: issue.createdByUserId });
-              setAssigneeOpen(false);
-            }}
-          >
-            <User className="h-3 w-3 shrink-0 text-muted-foreground" />
-            {creatorUserLabel ? `Assign to ${creatorUserLabel}` : "Assign to requester"}
-          </button>
+         <button
+           className={cn(
+             "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
+             !issue.assigneeAgentId && !issue.assigneeUserId && "bg-accent"
+           )}
+           onClick={() => { onUpdate({ assigneeAgentId: null, assigneeUserId: null }); setAssigneeOpen(false); }}
+         >
+           {t('issue.noAssignee')}
+         </button>
+        {issue.createdByUserId && (
+           <button
+             className={cn(
+               "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50",
+               issue.assigneeUserId === issue.createdByUserId && "bg-accent",
+             )}
+             onClick={() => {
+               onUpdate({ assigneeAgentId: null, assigneeUserId: issue.createdByUserId });
+               setAssigneeOpen(false);
+             }}
+           >
+             <User className="h-3 w-3 shrink-0 text-muted-foreground" />
+             {creatorUserLabel ? `${t('issue.assignTo')} ${creatorUserLabel === t('issue.me') ? t('issue.me').toLowerCase() : creatorUserLabel}` : t('issue.assignToRequester')}
+           </button>
         )}
         {sortedAgents
           .filter((a) => {
@@ -513,41 +397,35 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
       />
       <span className="text-sm truncate">{projectName(issue.projectId)}</span>
     </>
-  ) : (
-    <>
-      <Hexagon className="h-3.5 w-3.5 text-muted-foreground" />
-      <span className="text-sm text-muted-foreground">No project</span>
-    </>
-  );
+   ) : (
+     <>
+       <Hexagon className="h-3.5 w-3.5 text-muted-foreground" />
+       <span className="text-sm text-muted-foreground">{t('issue.noProject')}</span>
+     </>
+   );
 
   const projectContent = (
     <>
-      <input
-        className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
-        placeholder="Search projects..."
-        value={projectSearch}
-        onChange={(e) => setProjectSearch(e.target.value)}
-        autoFocus={!inline}
-      />
+       <input
+         className="w-full px-2 py-1.5 text-xs bg-transparent outline-none border-b border-border mb-1 placeholder:text-muted-foreground/50"
+         placeholder={t('issue.searchProjects')}
+         value={projectSearch}
+         onChange={(e) => setProjectSearch(e.target.value)}
+         autoFocus={!inline}
+       />
       <div className="max-h-48 overflow-y-auto overscroll-contain">
-        <button
-          className={cn(
-            "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 whitespace-nowrap",
-            !issue.projectId && "bg-accent"
-          )}
-          onClick={() => {
-            onUpdate({
-              projectId: null,
-              projectWorkspaceId: null,
-              executionWorkspaceId: null,
-              executionWorkspacePreference: null,
-              executionWorkspaceSettings: null,
-            });
-            setProjectOpen(false);
-          }}
-        >
-          No project
-        </button>
+         <button
+           className={cn(
+             "flex items-center gap-2 w-full px-2 py-1.5 text-xs rounded hover:bg-accent/50 whitespace-nowrap",
+             !issue.projectId && "bg-accent"
+           )}
+           onClick={() => {
+             onUpdate({ projectId: null, executionWorkspaceSettings: null });
+             setProjectOpen(false);
+           }}
+         >
+           {t('issue.noProject')}
+         </button>
         {orderedProjects
           .filter((p) => {
             if (!projectSearch.trim()) return true;
@@ -562,14 +440,10 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
               p.id === issue.projectId && "bg-accent"
             )}
             onClick={() => {
-              const defaultMode = defaultExecutionWorkspaceModeForProject(p);
               onUpdate({
                 projectId: p.id,
-                projectWorkspaceId: defaultProjectWorkspaceIdForProject(p),
-                executionWorkspaceId: null,
-                executionWorkspacePreference: defaultMode,
-                executionWorkspaceSettings: p.executionWorkspacePolicy?.enabled
-                  ? { mode: defaultMode }
+                executionWorkspaceSettings: SHOW_EXPERIMENTAL_ISSUE_WORKTREE_UI && p.executionWorkspacePolicy?.enabled
+                  ? { mode: p.executionWorkspacePolicy.defaultMode === "isolated" ? "isolated" : "project_primary" }
                   : null,
               });
               setProjectOpen(false);
@@ -589,215 +463,166 @@ export function IssueProperties({ issue, onUpdate, inline }: IssuePropertiesProp
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <PropertyRow label="Status">
-          <StatusIcon
-            status={issue.status}
-            onChange={(status) => onUpdate({ status })}
-            showLabel
-          />
-        </PropertyRow>
+         <PropertyRow label={t('issue.statusLabel')}>
+           <StatusIcon
+             status={issue.status}
+             onChange={(status) => onUpdate({ status })}
+             showLabel
+           />
+         </PropertyRow>
 
-        <PropertyRow label="Priority">
-          <PriorityIcon
-            priority={issue.priority}
-            onChange={(priority) => onUpdate({ priority })}
-            showLabel
-          />
-        </PropertyRow>
+         <PropertyRow label={t('issue.priorityLabel')}>
+           <PriorityIcon
+             priority={issue.priority}
+             onChange={(priority) => onUpdate({ priority })}
+             showLabel
+           />
+         </PropertyRow>
 
-        <PropertyPicker
-          inline={inline}
-          label="Labels"
-          open={labelsOpen}
-          onOpenChange={(open) => { setLabelsOpen(open); if (!open) setLabelSearch(""); }}
-          triggerContent={labelsTrigger}
-          triggerClassName="min-w-0 max-w-full"
-          popoverClassName="w-64"
-        >
-          {labelsContent}
-        </PropertyPicker>
+         <PropertyPicker
+           inline={inline}
+           label={t('issue.labelsLabel')}
+           open={labelsOpen}
+           onOpenChange={(open) => { setLabelsOpen(open); if (!open) setLabelSearch(""); }}
+           triggerContent={labelsTrigger}
+           triggerClassName="min-w-0 max-w-full"
+           popoverClassName="w-64"
+         >
+           {labelsContent}
+         </PropertyPicker>
 
-        <PropertyPicker
-          inline={inline}
-          label="Assignee"
-          open={assigneeOpen}
-          onOpenChange={(open) => { setAssigneeOpen(open); if (!open) setAssigneeSearch(""); }}
-          triggerContent={assigneeTrigger}
-          popoverClassName="w-52"
-          extra={issue.assigneeAgentId ? (
-            <Link
-              to={`/agents/${issue.assigneeAgentId}`}
-              className="inline-flex items-center justify-center h-5 w-5 rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <ArrowUpRight className="h-3 w-3" />
-            </Link>
-          ) : undefined}
-        >
-          {assigneeContent}
-        </PropertyPicker>
+         <PropertyPicker
+           inline={inline}
+           label={t('issue.assigneeLabel')}
+           open={assigneeOpen}
+           onOpenChange={(open) => { setAssigneeOpen(open); if (!open) setAssigneeSearch(""); }}
+           triggerContent={assigneeTrigger}
+           popoverClassName="w-52"
+           extra={issue.assigneeAgentId ? (
+             <Link
+               to={`/agents/${issue.assigneeAgentId}`}
+               className="inline-flex items-center justify-center h-5 w-5 rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground"
+               onClick={(e) => e.stopPropagation()}
+             >
+               <ArrowUpRight className="h-3 w-3" />
+             </Link>
+           ) : undefined}
+         >
+           {assigneeContent}
+         </PropertyPicker>
 
-        <PropertyPicker
-          inline={inline}
-          label="Project"
-          open={projectOpen}
-          onOpenChange={(open) => { setProjectOpen(open); if (!open) setProjectSearch(""); }}
-          triggerContent={projectTrigger}
-          triggerClassName="min-w-0 max-w-full"
-          popoverClassName="w-fit min-w-[11rem]"
-          extra={issue.projectId ? (
-            <Link
-              to={projectLink(issue.projectId)!}
-              className="inline-flex items-center justify-center h-5 w-5 rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <ArrowUpRight className="h-3 w-3" />
-            </Link>
-          ) : undefined}
-        >
-          {projectContent}
-        </PropertyPicker>
+         <PropertyPicker
+           inline={inline}
+           label={t('issue.projectLabel')}
+           open={projectOpen}
+           onOpenChange={(open) => { setProjectOpen(open); if (!open) setProjectSearch(""); }}
+           triggerContent={projectTrigger}
+           triggerClassName="min-w-0 max-w-full"
+           popoverClassName="w-fit min-w-[11rem]"
+           extra={issue.projectId ? (
+             <Link
+               to={projectLink(issue.projectId)!}
+               className="inline-flex items-center justify-center h-5 w-5 rounded hover:bg-accent/50 transition-colors text-muted-foreground hover:text-foreground"
+               onClick={(e) => e.stopPropagation()}
+             >
+               <ArrowUpRight className="h-3 w-3" />
+             </Link>
+           ) : undefined}
+         >
+           {projectContent}
+         </PropertyPicker>
 
-        {currentProjectSupportsExecutionWorkspace && (
-          <PropertyRow label="Workspace">
-            <div className="w-full space-y-2">
-              <select
-                className="w-full rounded border border-border bg-transparent px-2 py-1.5 text-xs outline-none"
-                value={currentExecutionWorkspaceSelection}
-                onChange={(e) => {
-                  const nextMode = e.target.value;
-                  onUpdate({
-                    executionWorkspacePreference: nextMode,
-                    executionWorkspaceId: nextMode === "reuse_existing" ? issue.executionWorkspaceId : null,
-                    executionWorkspaceSettings: {
-                      mode:
-                        nextMode === "reuse_existing"
-                          ? issueModeForExistingWorkspace(selectedReusableExecutionWorkspace?.mode)
-                          : nextMode,
-                    },
-                  });
-                }}
-              >
-                {EXECUTION_WORKSPACE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+         {currentProjectSupportsExecutionWorkspace && (
+           <PropertyRow label={t('issue.workspace')}>
+             <div className="flex items-center justify-between gap-3 rounded-md border border-border px-2 py-1.5 w-full">
+               <div className="min-w-0">
+                 <div className="text-sm">
+                   {usesIsolatedExecutionWorkspace ? t('issue.isolatedCheckout') : t('issue.projectPrimaryCheckout')}
+                 </div>
+                 <div className="text-[11px] text-muted-foreground">
+                   {t('issue.toggleIsolatedWorkspace')}
+                 </div>
+               </div>
+               <button
+                 className={cn(
+                   "relative inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                   usesIsolatedExecutionWorkspace ? "bg-green-600" : "bg-muted",
+                 )}
+                 type="button"
+                 onClick={() =>
+                   onUpdate({
+                     executionWorkspaceSettings: {
+                       mode: usesIsolatedExecutionWorkspace ? "project_primary" : "isolated",
+                     },
+                   })
+                 }
+               >
+                 <span
+                   className={cn(
+                     "inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform",
+                     usesIsolatedExecutionWorkspace ? "translate-x-4.5" : "translate-x-0.5",
+                   )}
+                 />
+               </button>
+             </div>
+           </PropertyRow>
+         )}
 
-              {currentExecutionWorkspaceSelection === "reuse_existing" && (
-                <select
-                  className="w-full rounded border border-border bg-transparent px-2 py-1.5 text-xs outline-none"
-                  value={issue.executionWorkspaceId ?? ""}
-                  onChange={(e) => {
-                    const nextExecutionWorkspaceId = e.target.value || null;
-                    const nextExecutionWorkspace = deduplicatedReusableWorkspaces.find(
-                      (workspace) => workspace.id === nextExecutionWorkspaceId,
-                    );
-                    onUpdate({
-                      executionWorkspacePreference: "reuse_existing",
-                      executionWorkspaceId: nextExecutionWorkspaceId,
-                      executionWorkspaceSettings: {
-                        mode: issueModeForExistingWorkspace(nextExecutionWorkspace?.mode),
-                      },
-                    });
-                  }}
-                >
-                  <option value="">Choose an existing workspace</option>
-                  {deduplicatedReusableWorkspaces.map((workspace) => (
-                    <option key={workspace.id} value={workspace.id}>
-                      {workspace.name} · {workspace.status} · {workspace.branchName ?? workspace.cwd ?? workspace.id.slice(0, 8)}
-                    </option>
-                  ))}
-                </select>
-              )}
+         {issue.parentId && (
+           <PropertyRow label={t('issue.parent')}>
+             <Link
+               to={`/issues/${issue.ancestors?.[0]?.identifier ?? issue.parentId}`}
+               className="text-sm hover:underline"
+             >
+               {issue.ancestors?.[0]?.title ?? issue.parentId.slice(0, 8)}
+             </Link>
+           </PropertyRow>
+         )}
 
-              {issue.currentExecutionWorkspace && (
-                <div className="text-[11px] text-muted-foreground space-y-0.5">
-                  <div style={{ overflowWrap: "anywhere" }}>
-                    Current:{" "}
-                    <Link
-                      to={`/execution-workspaces/${issue.currentExecutionWorkspace.id}`}
-                      className="hover:text-foreground hover:underline"
-                    >
-                      <BreakablePath text={issue.currentExecutionWorkspace.name} />
-                    </Link>
-                    {" · "}
-                    {issue.currentExecutionWorkspace.status}
-                  </div>
-                  {issue.currentExecutionWorkspace.cwd && (
-                    <CopyableValue value={issue.currentExecutionWorkspace.cwd} mono className="text-[11px]" />
-                  )}
-                  {issue.currentExecutionWorkspace.branchName && (
-                    <CopyableValue value={issue.currentExecutionWorkspace.branchName} label="Branch:" className="text-[11px]" />
-                  )}
-                  {issue.currentExecutionWorkspace.repoUrl && (
-                    <CopyableValue value={issue.currentExecutionWorkspace.repoUrl} label="Repo:" mono className="text-[11px]" />
-                  )}
-                </div>
-              )}
-              {!issue.currentExecutionWorkspace && currentProject?.primaryWorkspace?.cwd && (
-                <CopyableValue value={currentProject.primaryWorkspace.cwd} mono className="text-[11px] text-muted-foreground" />
-              )}
-            </div>
-          </PropertyRow>
-        )}
-
-        {issue.parentId && (
-          <PropertyRow label="Parent">
-            <Link
-              to={`/issues/${issue.ancestors?.[0]?.identifier ?? issue.parentId}`}
-              className="text-sm hover:underline"
-            >
-              {issue.ancestors?.[0]?.title ?? issue.parentId.slice(0, 8)}
-            </Link>
-          </PropertyRow>
-        )}
-
-        {issue.requestDepth > 0 && (
-          <PropertyRow label="Depth">
-            <span className="text-sm font-mono">{issue.requestDepth}</span>
-          </PropertyRow>
-        )}
+         {issue.requestDepth > 0 && (
+           <PropertyRow label={t('issue.depth')}>
+             <span className="text-sm font-mono">{issue.requestDepth}</span>
+           </PropertyRow>
+         )}
       </div>
 
       <Separator />
 
-      <div className="space-y-1">
-        {(issue.createdByAgentId || issue.createdByUserId) && (
-          <PropertyRow label="Created by">
-            {issue.createdByAgentId ? (
-              <Link
-                to={`/agents/${issue.createdByAgentId}`}
-                className="hover:underline"
-              >
-                <Identity name={agentName(issue.createdByAgentId) ?? issue.createdByAgentId.slice(0, 8)} size="sm" />
-              </Link>
-            ) : (
-              <>
-                <User className="h-3.5 w-3.5 text-muted-foreground" />
-                <span className="text-sm">{creatorUserLabel ?? "User"}</span>
-              </>
-            )}
-          </PropertyRow>
-        )}
-        {issue.startedAt && (
-          <PropertyRow label="Started">
-            <span className="text-sm">{formatDate(issue.startedAt)}</span>
-          </PropertyRow>
-        )}
-        {issue.completedAt && (
-          <PropertyRow label="Completed">
-            <span className="text-sm">{formatDate(issue.completedAt)}</span>
-          </PropertyRow>
-        )}
-        <PropertyRow label="Created">
-          <span className="text-sm">{formatDate(issue.createdAt)}</span>
-        </PropertyRow>
-        <PropertyRow label="Updated">
-          <span className="text-sm">{timeAgo(issue.updatedAt)}</span>
-        </PropertyRow>
-      </div>
+       <div className="space-y-1">
+         {(issue.createdByAgentId || issue.createdByUserId) && (
+           <PropertyRow label={t('issue.createdBy')}>
+             {issue.createdByAgentId ? (
+               <Link
+                 to={`/agents/${issue.createdByAgentId}`}
+                 className="hover:underline"
+               >
+                 <Identity name={agentName(issue.createdByAgentId) ?? issue.createdByAgentId.slice(0, 8)} size="sm" />
+               </Link>
+             ) : (
+               <>
+                 <User className="h-3.5 w-3.5 text-muted-foreground" />
+                 <span className="text-sm">{creatorUserLabel ?? t('issue.user')}</span>
+               </>
+             )}
+           </PropertyRow>
+         )}
+         {issue.startedAt && (
+           <PropertyRow label={t('issue.started')}>
+             <span className="text-sm">{formatDate(issue.startedAt)}</span>
+           </PropertyRow>
+         )}
+         {issue.completedAt && (
+           <PropertyRow label={t('issue.completed')}>
+             <span className="text-sm">{formatDate(issue.completedAt)}</span>
+           </PropertyRow>
+         )}
+         <PropertyRow label={t('issue.created')}>
+           <span className="text-sm">{formatDate(issue.createdAt)}</span>
+         </PropertyRow>
+         <PropertyRow label={t('issue.updated')}>
+           <span className="text-sm">{timeAgo(issue.updatedAt)}</span>
+         </PropertyRow>
+       </div>
     </div>
   );
 }

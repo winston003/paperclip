@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useDialog } from "../context/DialogContext";
 import { useCompany } from "../context/CompanyContext";
 import { issuesApi } from "../api/issues";
-import { authApi } from "../api/auth";
 import { queryKeys } from "../lib/queryKeys";
-import { formatAssigneeUserLabel } from "../lib/assignees";
 import { groupBy } from "../lib/groupBy";
 import { formatDate, cn } from "../lib/utils";
 import { timeAgo } from "../lib/timeAgo";
@@ -89,20 +88,11 @@ function toggleInArray(arr: string[], value: string): string[] {
   return arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value];
 }
 
-function applyFilters(issues: Issue[], state: IssueViewState, currentUserId?: string | null): Issue[] {
+function applyFilters(issues: Issue[], state: IssueViewState): Issue[] {
   let result = issues;
   if (state.statuses.length > 0) result = result.filter((i) => state.statuses.includes(i.status));
   if (state.priorities.length > 0) result = result.filter((i) => state.priorities.includes(i.priority));
-  if (state.assignees.length > 0) {
-    result = result.filter((issue) => {
-      for (const assignee of state.assignees) {
-        if (assignee === "__unassigned" && !issue.assigneeAgentId && !issue.assigneeUserId) return true;
-        if (assignee === "__me" && currentUserId && issue.assigneeUserId === currentUserId) return true;
-        if (issue.assigneeAgentId === assignee) return true;
-      }
-      return false;
-    });
-  }
+  if (state.assignees.length > 0) result = result.filter((i) => i.assigneeAgentId != null && state.assignees.includes(i.assigneeAgentId));
   if (state.labels.length > 0) result = result.filter((i) => (i.labelIds ?? []).some((id) => state.labels.includes(id)));
   return result;
 }
@@ -174,13 +164,9 @@ export function IssuesList({
   onSearchChange,
   onUpdateIssue,
 }: IssuesListProps) {
+  const { t } = useTranslation();
   const { selectedCompanyId } = useCompany();
   const { openNewIssue } = useDialog();
-  const { data: session } = useQuery({
-    queryKey: queryKeys.auth.session,
-    queryFn: () => authApi.getSession(),
-  });
-  const currentUserId = session?.user?.id ?? session?.session?.userId ?? null;
 
   // Scope the storage key per company so folding/view state is independent across companies.
   const scopedKey = selectedCompanyId ? `${viewStateKey}:${selectedCompanyId}` : viewStateKey;
@@ -240,9 +226,9 @@ export function IssuesList({
 
   const filtered = useMemo(() => {
     const sourceIssues = normalizedIssueSearch.length > 0 ? searchedIssues : issues;
-    const filteredByControls = applyFilters(sourceIssues, viewState, currentUserId);
+    const filteredByControls = applyFilters(sourceIssues, viewState);
     return sortIssues(filteredByControls, viewState);
-  }, [issues, searchedIssues, viewState, normalizedIssueSearch, currentUserId]);
+  }, [issues, searchedIssues, viewState, normalizedIssueSearch]);
 
   const { data: labels } = useQuery({
     queryKey: queryKeys.issues.labels(selectedCompanyId!),
@@ -251,6 +237,14 @@ export function IssuesList({
   });
 
   const activeFilterCount = countActiveFilters(viewState);
+
+  const getPresetLabel = (preset: { label: string }) => {
+    if (preset.label === "All") return t('issue.all');
+    if (preset.label === "Active") return t('issue.active');
+    if (preset.label === "Backlog") return t('issue.backlog');
+    if (preset.label === "Done") return t('issue.done');
+    return preset.label;
+  };
 
   const groupedContent = useMemo(() => {
     if (viewState.groupBy === "none") {
@@ -269,21 +263,13 @@ export function IssuesList({
         .map((p) => ({ key: p, label: statusLabel(p), items: groups[p]! }));
     }
     // assignee
-    const groups = groupBy(
-      filtered,
-      (issue) => issue.assigneeAgentId ?? (issue.assigneeUserId ? `__user:${issue.assigneeUserId}` : "__unassigned"),
-    );
+    const groups = groupBy(filtered, (i) => i.assigneeAgentId ?? "__unassigned");
     return Object.keys(groups).map((key) => ({
       key,
-      label:
-        key === "__unassigned"
-          ? "Unassigned"
-          : key.startsWith("__user:")
-            ? (formatAssigneeUserLabel(key.slice("__user:".length), currentUserId) ?? "User")
-            : (agentName(key) ?? key.slice(0, 8)),
+      label: key === "__unassigned" ? t('issue.unassigned') : (agentName(key) ?? key.slice(0, 8)),
       items: groups[key]!,
     }));
-  }, [filtered, viewState.groupBy, agents, agentName, currentUserId]);
+  }, [filtered, viewState.groupBy, agents]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const newIssueDefaults = (groupKey?: string) => {
     const defaults: Record<string, string> = {};
@@ -291,16 +277,13 @@ export function IssuesList({
     if (groupKey) {
       if (viewState.groupBy === "status") defaults.status = groupKey;
       else if (viewState.groupBy === "priority") defaults.priority = groupKey;
-      else if (viewState.groupBy === "assignee" && groupKey !== "__unassigned") {
-        if (groupKey.startsWith("__user:")) defaults.assigneeUserId = groupKey.slice("__user:".length);
-        else defaults.assigneeAgentId = groupKey;
-      }
+      else if (viewState.groupBy === "assignee" && groupKey !== "__unassigned") defaults.assigneeAgentId = groupKey;
     }
     return defaults;
   };
 
-  const assignIssue = (issueId: string, assigneeAgentId: string | null, assigneeUserId: string | null = null) => {
-    onUpdateIssue(issueId, { assigneeAgentId, assigneeUserId });
+  const assignIssue = (issueId: string, assigneeAgentId: string | null) => {
+    onUpdateIssue(issueId, { assigneeAgentId, assigneeUserId: null });
     setAssigneePickerIssueId(null);
     setAssigneeSearch("");
   };
@@ -322,7 +305,7 @@ export function IssuesList({
                 setIssueSearch(e.target.value);
                 onSearchChange?.(e.target.value);
               }}
-              placeholder="Search issues..."
+              placeholder={t('issue.searchIssues')}
               className="pl-7 text-xs sm:text-sm"
               aria-label="Search issues"
             />
@@ -335,14 +318,14 @@ export function IssuesList({
             <button
               className={`p-1.5 transition-colors ${viewState.viewMode === "list" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               onClick={() => updateView({ viewMode: "list" })}
-              title="List view"
+              title={t('issue.listView')}
             >
               <List className="h-3.5 w-3.5" />
             </button>
             <button
               className={`p-1.5 transition-colors ${viewState.viewMode === "board" ? "bg-accent text-foreground" : "text-muted-foreground hover:text-foreground"}`}
               onClick={() => updateView({ viewMode: "board" })}
-              title="Board view"
+              title={t('issue.boardView')}
             >
               <Columns3 className="h-3.5 w-3.5" />
             </button>
@@ -353,7 +336,7 @@ export function IssuesList({
             <PopoverTrigger asChild>
               <Button variant="ghost" size="sm" className={`text-xs ${activeFilterCount > 0 ? "text-blue-600 dark:text-blue-400" : ""}`}>
                 <Filter className="h-3.5 w-3.5 sm:h-3 sm:w-3 sm:mr-1" />
-                <span className="hidden sm:inline">{activeFilterCount > 0 ? `Filters: ${activeFilterCount}` : "Filter"}</span>
+                <span className="hidden sm:inline">{activeFilterCount > 0 ? t('issue.filters', { count: activeFilterCount }) : t('issue.filter')}</span>
                 {activeFilterCount > 0 && (
                   <span className="sm:hidden text-[10px] font-medium ml-0.5">{activeFilterCount}</span>
                 )}
@@ -398,7 +381,7 @@ export function IssuesList({
                           }`}
                           onClick={() => updateView({ statuses: isActive ? [] : [...preset.statuses] })}
                         >
-                          {preset.label}
+                          {getPresetLabel(preset)}
                         </button>
                       );
                     })}
@@ -446,37 +429,22 @@ export function IssuesList({
                     </div>
 
                     {/* Assignee */}
-                    <div className="space-y-1">
-                      <span className="text-xs text-muted-foreground">Assignee</span>
-                      <div className="space-y-0.5 max-h-32 overflow-y-auto">
-                        <label className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
-                          <Checkbox
-                            checked={viewState.assignees.includes("__unassigned")}
-                            onCheckedChange={() => updateView({ assignees: toggleInArray(viewState.assignees, "__unassigned") })}
-                          />
-                          <span className="text-sm">No assignee</span>
-                        </label>
-                        {currentUserId && (
-                          <label className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
-                            <Checkbox
-                              checked={viewState.assignees.includes("__me")}
-                              onCheckedChange={() => updateView({ assignees: toggleInArray(viewState.assignees, "__me") })}
-                            />
-                            <User className="h-3.5 w-3.5 text-muted-foreground" />
-                            <span className="text-sm">Me</span>
-                          </label>
-                        )}
-                        {(agents ?? []).map((agent) => (
-                          <label key={agent.id} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
-                            <Checkbox
-                              checked={viewState.assignees.includes(agent.id)}
-                              onCheckedChange={() => updateView({ assignees: toggleInArray(viewState.assignees, agent.id) })}
-                            />
-                            <span className="text-sm">{agent.name}</span>
-                          </label>
-                        ))}
+                    {agents && agents.length > 0 && (
+                      <div className="space-y-1">
+                        <span className="text-xs text-muted-foreground">Assignee</span>
+                        <div className="space-y-0.5 max-h-32 overflow-y-auto">
+                          {agents.map((agent) => (
+                            <label key={agent.id} className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-accent/50 cursor-pointer">
+                              <Checkbox
+                                checked={viewState.assignees.includes(agent.id)}
+                                onCheckedChange={() => updateView({ assignees: toggleInArray(viewState.assignees, agent.id) })}
+                              />
+                              <span className="text-sm">{agent.name}</span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {labels && labels.length > 0 && (
                       <div className="space-y-1">
@@ -513,11 +481,11 @@ export function IssuesList({
               <PopoverContent align="end" className="w-48 p-0">
                 <div className="p-2 space-y-0.5">
                   {([
-                    ["status", "Status"],
-                    ["priority", "Priority"],
-                    ["title", "Title"],
-                    ["created", "Created"],
-                    ["updated", "Updated"],
+                    ["status", t('issue.status')],
+                    ["priority", t('issue.priority')],
+                    ["title", t('issue.title')],
+                    ["created", t('issue.created')],
+                    ["updated", t('issue.updated')],
                   ] as const).map(([field, label]) => (
                     <button
                       key={field}
@@ -557,10 +525,10 @@ export function IssuesList({
               <PopoverContent align="end" className="w-44 p-0">
                 <div className="p-2 space-y-0.5">
                   {([
-                    ["status", "Status"],
-                    ["priority", "Priority"],
-                    ["assignee", "Assignee"],
-                    ["none", "None"],
+                    ["status", t('issue.status')],
+                    ["priority", t('issue.priority')],
+                    ["assignee", t('issue.assignee')],
+                    ["none", t('issue.none')],
                   ] as const).map(([value, label]) => (
                     <button
                       key={value}
@@ -586,8 +554,8 @@ export function IssuesList({
       {!isLoading && filtered.length === 0 && viewState.viewMode === "list" && (
         <EmptyState
           icon={CircleDot}
-          message="No issues match the current filters or search."
-          action="Create Issue"
+          message={t('issue.noIssuesMatch')}
+          action={t('issue.createIssue')}
           onAction={() => openNewIssue(newIssueDefaults())}
         />
       )}
@@ -725,13 +693,6 @@ export function IssuesList({
                           >
                             {issue.assigneeAgentId && agentName(issue.assigneeAgentId) ? (
                               <Identity name={agentName(issue.assigneeAgentId)!} size="sm" />
-                            ) : issue.assigneeUserId ? (
-                              <span className="inline-flex items-center gap-1.5 text-xs">
-                                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-dashed border-muted-foreground/35 bg-muted/30">
-                                  <User className="h-3 w-3" />
-                                </span>
-                                {formatAssigneeUserLabel(issue.assigneeUserId, currentUserId) ?? "User"}
-                              </span>
                             ) : (
                               <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-dashed border-muted-foreground/35 bg-muted/30">
@@ -750,7 +711,7 @@ export function IssuesList({
                         >
                           <input
                             className="mb-1 w-full border-b border-border bg-transparent px-2 py-1.5 text-xs outline-none placeholder:text-muted-foreground/50"
-                            placeholder="Search assignees..."
+                            placeholder={t('issue.searchAgents')}
                             value={assigneeSearch}
                             onChange={(e) => setAssigneeSearch(e.target.value)}
                             autoFocus
@@ -759,32 +720,16 @@ export function IssuesList({
                             <button
                               className={cn(
                                 "flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs hover:bg-accent/50",
-                                !issue.assigneeAgentId && !issue.assigneeUserId && "bg-accent",
+                                !issue.assigneeAgentId && "bg-accent",
                               )}
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                assignIssue(issue.id, null, null);
+                                assignIssue(issue.id, null);
                               }}
                             >
                               No assignee
                             </button>
-                            {currentUserId && (
-                              <button
-                                className={cn(
-                                  "flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs hover:bg-accent/50",
-                                  issue.assigneeUserId === currentUserId && "bg-accent",
-                                )}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  assignIssue(issue.id, null, currentUserId);
-                                }}
-                              >
-                                <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                                <span>Me</span>
-                              </button>
-                            )}
                             {(agents ?? [])
                               .filter((agent) => {
                                 if (!assigneeSearch.trim()) return true;
@@ -802,7 +747,7 @@ export function IssuesList({
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    assignIssue(issue.id, agent.id, null);
+                                    assignIssue(issue.id, agent.id);
                                   }}
                                 >
                                   <Identity name={agent.name} size="sm" className="min-w-0" />
