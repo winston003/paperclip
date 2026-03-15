@@ -70,10 +70,10 @@ export function Issues() {
   const issueLinkState = useMemo(
     () =>
       createIssueDetailLocationState(
-        "Issues",
+        t('navigation.issues'),
         `${location.pathname}${location.search}${location.hash}`,
       ),
-    [location.pathname, location.search, location.hash],
+    [t, location.pathname, location.search, location.hash],
   );
 
   useEffect(() => {

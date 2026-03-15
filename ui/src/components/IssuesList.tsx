@@ -307,7 +307,7 @@ export function IssuesList({
               }}
               placeholder={t('issue.searchIssues')}
               className="pl-7 text-xs sm:text-sm"
-              aria-label="Search issues"
+              aria-label={t('issue.searchIssuesAria')}
             />
           </div>
         </div>
