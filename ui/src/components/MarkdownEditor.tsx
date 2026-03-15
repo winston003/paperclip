@@ -9,6 +9,7 @@ import {
   type CSSProperties,
   type DragEvent,
 } from "react";
+import { useTranslation } from "react-i18next";
 import {
   CodeMirrorEditor,
   MDXEditor,
@@ -205,6 +206,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
   mentions,
   onSubmit,
 }: MarkdownEditorProps, forwardedRef) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const ref = useRef<MDXEditorMethods>(null);
   const latestValueRef = useRef(value);
@@ -275,7 +277,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
             }, 100);
             return src;
           } catch (err) {
-            const message = err instanceof Error ? err.message : "Image upload failed";
+            const message = err instanceof Error ? err.message : t('markdownEditor.imageUploadFailed');
             setUploadError(message);
             throw err;
           }
@@ -621,7 +623,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
               <span>{option.name}</span>
               {option.kind === "project" && option.projectId && (
                 <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
-                  Project
+                  {t('markdownEditor.project')}
                 </span>
               )}
             </button>
@@ -636,7 +638,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
             !bordered && "inset-0 rounded-sm",
           )}
         >
-          Drop image to upload
+          {t('markdownEditor.dropImageToUpload')}
         </div>
       )}
       {uploadError && (

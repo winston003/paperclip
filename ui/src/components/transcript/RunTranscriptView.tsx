@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { TranscriptEntry } from "../../adapters";
 import { MarkdownBody } from "../MarkdownBody";
 import { cn, formatTokens } from "../../lib/utils";
@@ -241,13 +242,13 @@ function isCommandTool(name: string, input: unknown): boolean {
   return Boolean(record && (typeof record.command === "string" || typeof record.cmd === "string"));
 }
 
-function displayToolName(name: string, input: unknown): string {
-  if (isCommandTool(name, input)) return "Executing command";
+function displayToolName(name: string, input: unknown, t: (key: string) => string): string {
+  if (isCommandTool(name, input)) return t('transcript.executingCommand');
   return humanizeLabel(name);
 }
 
-function summarizeToolResult(result: string | undefined, isError: boolean | undefined, density: TranscriptDensity): string {
-  if (!result) return isError ? "Tool failed" : "Waiting for result";
+function summarizeToolResult(result: string | undefined, isError: boolean | undefined, density: TranscriptDensity, t?: (key: string) => string): string {
+  if (!result) return isError ? (t?.('transcript.toolFailed') ?? "Tool failed") : (t?.('transcript.waitingForResult') ?? "Waiting for result");
   const structured = parseStructuredToolResult(result);
   if (structured) {
     if (structured.body) {
@@ -325,7 +326,7 @@ function groupCommandBlocks(blocks: TranscriptBlock[]): TranscriptBlock[] {
   return grouped;
 }
 
-export function normalizeTranscript(entries: TranscriptEntry[], streaming: boolean): TranscriptBlock[] {
+export function normalizeTranscript(entries: TranscriptEntry[], streaming: boolean, t?: (key: string) => string): TranscriptBlock[] {
   const blocks: TranscriptBlock[] = [];
   const pendingToolBlocks = new Map<string, Extract<TranscriptBlock, { type: "tool" }>>();
   const pendingActivityBlocks = new Map<string, Extract<TranscriptBlock, { type: "activity" }>>();
@@ -372,7 +373,7 @@ export function normalizeTranscript(entries: TranscriptEntry[], streaming: boole
       const toolBlock: Extract<TranscriptBlock, { type: "tool" }> = {
         type: "tool",
         ts: entry.ts,
-        name: displayToolName(entry.name, entry.input),
+        name: displayToolName(entry.name, entry.input, t ?? (() => "Executing command")),
         toolUseId: entry.toolUseId ?? extractToolUseId(entry.input),
         input: entry.input,
         status: "running",
@@ -518,6 +519,7 @@ function TranscriptMessageBlock({
   block: Extract<TranscriptBlock, { type: "message" }>;
   density: TranscriptDensity;
 }) {
+  const { t } = useTranslation();
   const isAssistant = block.role === "assistant";
   const compact = density === "compact";
 
@@ -526,7 +528,7 @@ function TranscriptMessageBlock({
       {!isAssistant && (
         <div className="mb-1.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           <User className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} />
-          <span>User</span>
+          <span>{t('transcript.user')}</span>
         </div>
       )}
       <MarkdownBody
@@ -543,7 +545,7 @@ function TranscriptMessageBlock({
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-70" />
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-current" />
           </span>
-          Streaming
+          {t('transcript.streaming')}
         </div>
       )}
     </div>
@@ -579,15 +581,16 @@ function TranscriptToolCard({
   block: Extract<TranscriptBlock, { type: "tool" }>;
   density: TranscriptDensity;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(block.status === "error");
   const compact = density === "compact";
   const parsedResult = parseStructuredToolResult(block.result);
   const statusLabel =
     block.status === "running"
-      ? "Running"
+      ? t('transcript.running')
       : block.status === "error"
-        ? "Errored"
-        : "Completed";
+        ? t('transcript.errored')
+        : t('transcript.completed');
   const statusTone =
     block.status === "running"
       ? "text-cyan-700 dark:text-cyan-300"
@@ -610,7 +613,7 @@ function TranscriptToolCard({
     ? summarizeToolInput(block.name, block.input, density)
     : block.status === "completed" && parsedResult?.body
       ? truncate(parsedResult.body.split("\n")[0] ?? parsedResult.body, compact ? 84 : 140)
-      : summarizeToolResult(block.result, block.isError, density);
+      : summarizeToolResult(block.result, block.isError, density, t);
 
   return (
     <div className={cn(block.status === "error" && "rounded-xl border border-red-500/20 bg-red-500/[0.04] p-3")}>
@@ -639,7 +642,7 @@ function TranscriptToolCard({
           type="button"
           className="mt-0.5 inline-flex h-5 w-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
           onClick={() => setOpen((value) => !value)}
-          aria-label={open ? "Collapse tool details" : "Expand tool details"}
+          aria-label={open ? t('transcript.collapseToolDetails') : t('transcript.expandToolDetails')}
         >
           {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </button>
@@ -650,21 +653,21 @@ function TranscriptToolCard({
             <div className={cn("grid gap-3", compact ? "grid-cols-1" : "lg:grid-cols-2")}>
               <div>
                 <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Input
+                  {t('transcript.input')}
                 </div>
                 <pre className="overflow-x-auto whitespace-pre-wrap break-words font-mono text-[11px] text-foreground/80">
-                  {formatToolPayload(block.input) || "<empty>"}
+                  {formatToolPayload(block.input) || t('transcript.empty')}
                 </pre>
               </div>
               <div>
                 <div className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                  Result
+                  {t('transcript.result')}
                 </div>
                 <pre className={cn(
                   "overflow-x-auto whitespace-pre-wrap break-words font-mono text-[11px]",
                   block.status === "error" ? "text-red-700 dark:text-red-300" : "text-foreground/80",
                 )}>
-                  {block.result ? formatToolPayload(block.result) : "Waiting for result..."}
+                  {block.result ? formatToolPayload(block.result) : t('transcript.waitingForResult')}
                 </pre>
               </div>
             </div>
@@ -687,6 +690,7 @@ function TranscriptCommandGroup({
   block: Extract<TranscriptBlock, { type: "command_group" }>;
   density: TranscriptDensity;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const compact = density === "compact";
   const runningItem = [...block.items].reverse().find((item) => item.status === "running");
@@ -695,10 +699,10 @@ function TranscriptCommandGroup({
   const isRunning = Boolean(runningItem);
   const showExpandedErrorState = open && hasError;
   const title = isRunning
-    ? "Executing command"
+    ? t('transcript.executingCommand')
     : block.items.length === 1
-      ? "Executed command"
-      : `Executed ${block.items.length} commands`;
+      ? t('transcript.executedCommand')
+      : t('transcript.executedCommands', { count: block.items.length });
   const subtitle = runningItem
     ? summarizeToolInput("command_execution", runningItem.input, density)
     : null;
@@ -751,7 +755,7 @@ function TranscriptCommandGroup({
           )}
           {!subtitle && latestItem?.status === "error" && open && (
             <div className={cn("mt-1", compact ? "text-xs" : "text-sm", statusTone)}>
-              Command failed
+              {t('transcript.commandFailed')}
             </div>
           )}
         </div>
@@ -765,7 +769,7 @@ function TranscriptCommandGroup({
             event.stopPropagation();
             setOpen((value) => !value);
           }}
-          aria-label={open ? "Collapse command details" : "Expand command details"}
+          aria-label={open ? t('transcript.collapseCommandDetails') : t('transcript.expandCommandDetails')}
         >
           {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </button>
@@ -892,6 +896,7 @@ function TranscriptStdoutRow({
   density: TranscriptDensity;
   collapseByDefault: boolean;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(!collapseByDefault);
 
   return (
@@ -904,7 +909,7 @@ function TranscriptStdoutRow({
           type="button"
           className="inline-flex h-5 w-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
           onClick={() => setOpen((value) => !value)}
-          aria-label={open ? "Collapse stdout" : "Expand stdout"}
+          aria-label={open ? t('transcript.collapseStdout') : t('transcript.expandStdout')}
         >
           {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         </button>
@@ -966,18 +971,20 @@ export function RunTranscriptView({
   limit,
   streaming = false,
   collapseStdout = false,
-  emptyMessage = "No transcript yet.",
+  emptyMessage,
   className,
   thinkingClassName,
 }: RunTranscriptViewProps) {
-  const blocks = useMemo(() => normalizeTranscript(entries, streaming), [entries, streaming]);
+  const { t } = useTranslation();
+  const effectiveEmptyMessage = emptyMessage ?? t('transcript.noTranscriptYet');
+  const blocks = useMemo(() => normalizeTranscript(entries, streaming, t), [entries, streaming, t]);
   const visibleBlocks = limit ? blocks.slice(-limit) : blocks;
   const visibleEntries = limit ? entries.slice(-limit) : entries;
 
   if (entries.length === 0) {
     return (
       <div className={cn("rounded-2xl border border-dashed border-border/70 bg-background/40 p-4 text-sm text-muted-foreground", className)}>
-        {emptyMessage}
+        {effectiveEmptyMessage}
       </div>
     );
   }

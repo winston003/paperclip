@@ -371,13 +371,13 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
       <div className="space-y-1 pb-4">
         <PropertyRow label={<FieldLabel label={t('project.properties.name')} state={fieldState("name")} />}>
           {onUpdate || onFieldUpdate ? (
-            <DraftInput
-              value={project.name}
-              onCommit={(name) => commitField("name", { name })}
-              immediate
-              className="w-full rounded border border-border bg-transparent px-2 py-1 text-sm outline-none"
-              placeholder="Project name"
-            />
+              <DraftInput
+                value={project.name}
+                onCommit={(name) => commitField("name", { name })}
+                immediate
+                className="w-full rounded border border-border bg-transparent px-2 py-1 text-sm outline-none"
+                placeholder={t('project.properties.namePlaceholder')}
+              />
           ) : (
             <span className="text-sm">{project.name}</span>
           )}
@@ -388,18 +388,18 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
            valueClassName="space-y-0.5"
          >
           {onUpdate || onFieldUpdate ? (
-            <InlineEditor
-              value={project.description ?? ""}
-              onSave={(description) => commitField("description", { description })}
-              as="p"
-              className="text-sm text-muted-foreground"
-              placeholder="Add a description..."
-              multiline
-            />
+             <InlineEditor
+               value={project.description ?? ""}
+               onSave={(description) => commitField("description", { description })}
+               as="p"
+               className="text-sm text-muted-foreground"
+               placeholder={t('project.detail.addDescription')}
+               multiline
+             />
           ) : (
-            <p className="text-sm text-muted-foreground">
-              {project.description?.trim() || "No description"}
-            </p>
+             <p className="text-sm text-muted-foreground">
+               {project.description?.trim() || t('project.properties.noDescription')}
+             </p>
           )}
         </PropertyRow>
          <PropertyRow label={<FieldLabel label={t('project.properties.status')} state={fieldState("status")} />}>
@@ -412,19 +412,19 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
             <StatusBadge status={project.status} />
           )}
         </PropertyRow>
-        {project.leadAgentId && (
-          <PropertyRow label="Lead">
-            <span className="text-sm font-mono">{project.leadAgentId.slice(0, 8)}</span>
-          </PropertyRow>
-        )}
+         {project.leadAgentId && (
+           <PropertyRow label={t('project.properties.lead')}>
+             <span className="text-sm font-mono">{project.leadAgentId.slice(0, 8)}</span>
+           </PropertyRow>
+         )}
          <PropertyRow
            label={<FieldLabel label={t('project.properties.goals')} state={fieldState("goals")} />}
            alignStart
            valueClassName="space-y-2"
          >
-          {linkedGoals.length === 0 ? (
-            <span className="text-sm text-muted-foreground">None</span>
-          ) : (
+           {linkedGoals.length === 0 ? (
+             <span className="text-sm text-muted-foreground">{t('project.properties.none')}</span>
+           ) : (
             <div className="flex flex-wrap gap-1.5">
               {linkedGoals.map((goal) => (
                 <span
@@ -457,16 +457,16 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
                   className="h-6 w-fit px-2"
                   disabled={availableGoals.length === 0}
                 >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Goal
-                </Button>
+                   <Plus className="h-3 w-3 mr-1" />
+                   {t('project.properties.addGoal')}
+                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-56 p-1" align="start">
-                {availableGoals.length === 0 ? (
-                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                    All goals linked.
-                  </div>
-                ) : (
+                 {availableGoals.length === 0 ? (
+                   <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                     {t('project.properties.allGoalsLinked')}
+                   </div>
+                 ) : (
                   availableGoals.map((goal) => (
                     <button
                       key={goal.id}
@@ -498,28 +498,28 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
 
       <div className="space-y-1 py-4">
         <div className="space-y-2">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span>Workspaces</span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-border text-[10px] text-muted-foreground hover:text-foreground"
-                  aria-label="Workspaces help"
-                >
-                  ?
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                Workspaces give your agents hints about where the work is
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          {workspaces.length === 0 ? (
-            <p className="rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">
-              No workspace configured.
-            </p>
-          ) : (
+           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+             <span>{t('project.properties.workspaces')}</span>
+             <Tooltip>
+               <TooltipTrigger asChild>
+                 <button
+                   type="button"
+                   className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-border text-[10px] text-muted-foreground hover:text-foreground"
+                   aria-label="Workspaces help"
+                 >
+                   ?
+                 </button>
+               </TooltipTrigger>
+               <TooltipContent side="top">
+                 {t('project.properties.workspacesHelp')}
+               </TooltipContent>
+             </Tooltip>
+           </div>
+           {workspaces.length === 0 ? (
+             <p className="rounded-md border border-dashed border-border px-3 py-2 text-sm text-muted-foreground">
+               {t('project.properties.noWorkspaceConfigured')}
+             </p>
+           ) : (
             <div className="space-y-1">
               {workspaces.map((workspace) => (
                 <div key={workspace.id} className="space-y-1">
@@ -608,110 +608,110 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
             </div>
           )}
           <div className="flex flex-col items-start gap-2">
-            <Button
-              variant="outline"
-              size="xs"
-              className="h-7 px-2.5"
-              onClick={() => {
-                setWorkspaceMode("local");
-                setWorkspaceError(null);
-              }}
-            >
-              Add workspace local folder
-            </Button>
-            <Button
-              variant="outline"
-              size="xs"
-              className="h-7 px-2.5"
-              onClick={() => {
-                setWorkspaceMode("repo");
-                setWorkspaceError(null);
-              }}
-            >
-              Add workspace repo
-            </Button>
+             <Button
+               variant="outline"
+               size="xs"
+               className="h-7 px-2.5"
+               onClick={() => {
+                 setWorkspaceMode("local");
+                 setWorkspaceError(null);
+               }}
+             >
+               {t('project.properties.addWorkspaceLocalFolder')}
+             </Button>
+             <Button
+               variant="outline"
+               size="xs"
+               className="h-7 px-2.5"
+               onClick={() => {
+                 setWorkspaceMode("repo");
+                 setWorkspaceError(null);
+               }}
+             >
+               {t('project.properties.addWorkspaceRepo')}
+             </Button>
           </div>
           {workspaceMode === "local" && (
             <div className="space-y-1.5 rounded-md border border-border p-2">
               <div className="flex items-center gap-2">
-                <input
-                  className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
-                  value={workspaceCwd}
-                  onChange={(e) => setWorkspaceCwd(e.target.value)}
-                  placeholder="/absolute/path/to/workspace"
-                />
+                 <input
+                   className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
+                   value={workspaceCwd}
+                   onChange={(e) => setWorkspaceCwd(e.target.value)}
+                   placeholder={t('project.properties.absolutePathPlaceholder')}
+                 />
                 <ChoosePathButton />
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="xs"
-                  className="h-6 px-2"
-                  disabled={!workspaceCwd.trim() || createWorkspace.isPending}
-                  onClick={submitLocalWorkspace}
-                >
-                  Save
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  className="h-6 px-2"
-                  onClick={() => {
-                    setWorkspaceMode(null);
-                    setWorkspaceCwd("");
-                    setWorkspaceError(null);
-                  }}
-                >
-                  Cancel
-                </Button>
+                 <Button
+                   variant="outline"
+                   size="xs"
+                   className="h-6 px-2"
+                   disabled={!workspaceCwd.trim() || createWorkspace.isPending}
+                   onClick={submitLocalWorkspace}
+                 >
+                   {t('project.properties.save')}
+                 </Button>
+                 <Button
+                   variant="ghost"
+                   size="xs"
+                   className="h-6 px-2"
+                   onClick={() => {
+                     setWorkspaceMode(null);
+                     setWorkspaceCwd("");
+                     setWorkspaceError(null);
+                   }}
+                 >
+                   {t('project.properties.cancel')}
+                 </Button>
               </div>
             </div>
           )}
           {workspaceMode === "repo" && (
             <div className="space-y-1.5 rounded-md border border-border p-2">
-              <input
-                className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs outline-none"
-                value={workspaceRepoUrl}
-                onChange={(e) => setWorkspaceRepoUrl(e.target.value)}
-                placeholder="https://github.com/org/repo"
-              />
+               <input
+                 className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs outline-none"
+                 value={workspaceRepoUrl}
+                 onChange={(e) => setWorkspaceRepoUrl(e.target.value)}
+                 placeholder={t('project.properties.githubRepoPlaceholder')}
+               />
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="xs"
-                  className="h-6 px-2"
-                  disabled={!workspaceRepoUrl.trim() || createWorkspace.isPending}
-                  onClick={submitRepoWorkspace}
-                >
-                  Save
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  className="h-6 px-2"
-                  onClick={() => {
-                    setWorkspaceMode(null);
-                    setWorkspaceRepoUrl("");
-                    setWorkspaceError(null);
-                  }}
-                >
-                  Cancel
-                </Button>
+                 <Button
+                   variant="outline"
+                   size="xs"
+                   className="h-6 px-2"
+                   disabled={!workspaceRepoUrl.trim() || createWorkspace.isPending}
+                   onClick={submitRepoWorkspace}
+                 >
+                   {t('project.properties.save')}
+                 </Button>
+                 <Button
+                   variant="ghost"
+                   size="xs"
+                   className="h-6 px-2"
+                   onClick={() => {
+                     setWorkspaceMode(null);
+                     setWorkspaceRepoUrl("");
+                     setWorkspaceError(null);
+                   }}
+                 >
+                   {t('project.properties.cancel')}
+                 </Button>
               </div>
             </div>
           )}
           {workspaceError && (
             <p className="text-xs text-destructive">{workspaceError}</p>
           )}
-          {createWorkspace.isError && (
-            <p className="text-xs text-destructive">Failed to save workspace.</p>
-          )}
-          {removeWorkspace.isError && (
-            <p className="text-xs text-destructive">Failed to delete workspace.</p>
-          )}
-          {updateWorkspace.isError && (
-            <p className="text-xs text-destructive">Failed to update workspace.</p>
-          )}
+           {createWorkspace.isError && (
+             <p className="text-xs text-destructive">{t('project.properties.failedToSaveWorkspace')}</p>
+           )}
+           {removeWorkspace.isError && (
+             <p className="text-xs text-destructive">{t('project.properties.failedToDeleteWorkspace')}</p>
+           )}
+           {updateWorkspace.isError && (
+             <p className="text-xs text-destructive">{t('project.properties.failedToUpdateWorkspace')}</p>
+           )}
         </div>
 
         {SHOW_EXPERIMENTAL_ISSUE_WORKTREE_UI && (
@@ -719,33 +719,33 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
         <Separator className="my-4" />
 
         <div className="py-1.5 space-y-2">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span>Execution Workspaces</span>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-border text-[10px] text-muted-foreground hover:text-foreground"
-                  aria-label="Execution workspaces help"
-                >
-                  ?
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                Project-owned defaults for isolated issue checkouts and execution workspace behavior.
-              </TooltipContent>
-            </Tooltip>
-          </div>
+           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+             <span>{t('project.properties.executionWorkspaces')}</span>
+             <Tooltip>
+               <TooltipTrigger asChild>
+                 <button
+                   type="button"
+                   className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-border text-[10px] text-muted-foreground hover:text-foreground"
+                   aria-label="Execution workspaces help"
+                 >
+                   ?
+                 </button>
+               </TooltipTrigger>
+               <TooltipContent side="top">
+                 {t('project.properties.executionWorkspacesHelp')}
+               </TooltipContent>
+             </Tooltip>
+           </div>
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <div className="space-y-0.5">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <span>Enable isolated issue checkouts</span>
-                  <SaveIndicator state={fieldState("execution_workspace_enabled")} />
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Let issues choose between the project’s primary checkout and an isolated execution workspace.
-                </div>
+                 <div className="flex items-center gap-2 text-sm font-medium">
+                   <span>{t('project.properties.enableIsolatedIssueCheckouts')}</span>
+                   <SaveIndicator state={fieldState("execution_workspace_enabled")} />
+                 </div>
+                 <div className="text-xs text-muted-foreground">
+                   {t('project.properties.isolatedCheckoutDescription')}
+                 </div>
               </div>
               {onUpdate || onFieldUpdate ? (
                 <button
@@ -768,9 +768,9 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
                   />
                 </button>
               ) : (
-                <span className="text-xs text-muted-foreground">
-                  {executionWorkspacesEnabled ? "Enabled" : "Disabled"}
-                </span>
+                 <span className="text-xs text-muted-foreground">
+                   {executionWorkspacesEnabled ? t('project.properties.enabled') : t('project.properties.disabled')}
+                 </span>
               )}
             </div>
 
@@ -778,13 +778,13 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
               <>
                 <div className="flex items-center justify-between gap-3">
                   <div className="space-y-0.5">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span>New issues default to isolated checkout</span>
-                      <SaveIndicator state={fieldState("execution_workspace_default_mode")} />
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">
-                      If disabled, new issues stay on the project’s primary checkout unless someone opts in.
-                    </div>
+                     <div className="flex items-center gap-2 text-sm">
+                       <span>{t('project.properties.newIssuesDefaultIsolated')}</span>
+                       <SaveIndicator state={fieldState("execution_workspace_default_mode")} />
+                     </div>
+                     <div className="text-[11px] text-muted-foreground">
+                       {t('project.properties.defaultCheckoutDescription')}
+                     </div>
                   </div>
                   <button
                     className={cn(
@@ -810,43 +810,43 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
                 </div>
 
                 <div className="border-t border-border/60 pt-2">
-                  <button
-                    type="button"
-                    className="flex items-center gap-2 w-full py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setExecutionWorkspaceAdvancedOpen((open) => !open)}
-                  >
-                    {executionWorkspaceAdvancedOpen ? "Hide advanced checkout settings" : "Show advanced checkout settings"}
-                  </button>
+                   <button
+                     type="button"
+                     className="flex items-center gap-2 w-full py-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                     onClick={() => setExecutionWorkspaceAdvancedOpen((open) => !open)}
+                   >
+                     {executionWorkspaceAdvancedOpen ? t('project.properties.hideAdvancedCheckoutSettings') : t('project.properties.showAdvancedCheckoutSettings')}
+                   </button>
                 </div>
 
                 {executionWorkspaceAdvancedOpen && (
                   <div className="space-y-3">
-                    <div className="text-xs text-muted-foreground">
-                      Host-managed implementation: <span className="text-foreground">Git worktree</span>
-                    </div>
+                     <div className="text-xs text-muted-foreground">
+                       {t('project.properties.hostManagedImplementation')} <span className="text-foreground">{t('project.properties.gitWorktree')}</span>
+                     </div>
                     <div>
                       <div className="mb-1 flex items-center gap-1.5">
-                        <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>Base ref</span>
-                          <SaveIndicator state={fieldState("execution_workspace_base_ref")} />
-                        </label>
+                         <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                           <span>{t('project.properties.baseRef')}</span>
+                           <SaveIndicator state={fieldState("execution_workspace_base_ref")} />
+                         </label>
                       </div>
-                      <DraftInput
-                        value={executionWorkspaceStrategy.baseRef ?? ""}
-                        onCommit={(value) =>
-                          commitField("execution_workspace_base_ref", {
-                            ...updateExecutionWorkspacePolicy({
-                              workspaceStrategy: {
-                                ...executionWorkspaceStrategy,
-                                type: "git_worktree",
-                                baseRef: value || null,
-                              },
-                            })!,
-                          })}
-                        immediate
-                        className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
-                        placeholder="origin/main"
-                      />
+                       <DraftInput
+                         value={executionWorkspaceStrategy.baseRef ?? ""}
+                         onCommit={(value) =>
+                           commitField("execution_workspace_base_ref", {
+                             ...updateExecutionWorkspacePolicy({
+                               workspaceStrategy: {
+                                 ...executionWorkspaceStrategy,
+                                 type: "git_worktree",
+                                 baseRef: value || null,
+                               },
+                             })!,
+                           })}
+                         immediate
+                         className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
+                         placeholder={t('project.properties.baseRefPlaceholder')}
+                       />
                     </div>
                     <div>
                       <div className="mb-1 flex items-center gap-1.5">

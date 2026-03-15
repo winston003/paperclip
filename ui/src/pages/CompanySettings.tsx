@@ -1,10 +1,10 @@
-import { ChangeEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useCompany } from "../context/CompanyContext";
 import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { companiesApi } from "../api/companies";
 import { accessApi } from "../api/access";
-import { assetsApi } from "../api/assets";
 import { queryKeys } from "../lib/queryKeys";
 import { Button } from "@/components/ui/button";
 import { Settings, Check } from "lucide-react";
@@ -22,6 +22,7 @@ type AgentSnippetInput = {
 };
 
 export function CompanySettings() {
+  const { t } = useTranslation();
   const {
     companies,
     selectedCompany,
@@ -35,8 +36,6 @@ export function CompanySettings() {
   const [companyName, setCompanyName] = useState("");
   const [description, setDescription] = useState("");
   const [brandColor, setBrandColor] = useState("");
-  const [logoUrl, setLogoUrl] = useState("");
-  const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
 
   // Sync local state from selected company
   useEffect(() => {
@@ -44,7 +43,6 @@ export function CompanySettings() {
     setCompanyName(selectedCompany.name);
     setDescription(selectedCompany.description ?? "");
     setBrandColor(selectedCompany.brandColor ?? "");
-    setLogoUrl(selectedCompany.logoUrl ?? "");
   }, [selectedCompany]);
 
   const [inviteError, setInviteError] = useState<string | null>(null);
@@ -127,46 +125,10 @@ export function CompanySettings() {
     },
     onError: (err) => {
       setInviteError(
-        err instanceof Error ? err.message : "Failed to create invite"
+        err instanceof Error ? err.message : t('companySettings.failedToCreateInvite')
       );
     }
   });
-
-  const syncLogoState = (nextLogoUrl: string | null) => {
-    setLogoUrl(nextLogoUrl ?? "");
-    void queryClient.invalidateQueries({ queryKey: queryKeys.companies.all });
-  };
-
-  const logoUploadMutation = useMutation({
-    mutationFn: (file: File) =>
-      assetsApi
-        .uploadCompanyLogo(selectedCompanyId!, file)
-        .then((asset) => companiesApi.update(selectedCompanyId!, { logoAssetId: asset.assetId })),
-    onSuccess: (company) => {
-      syncLogoState(company.logoUrl);
-      setLogoUploadError(null);
-    }
-  });
-
-  const clearLogoMutation = useMutation({
-    mutationFn: () => companiesApi.update(selectedCompanyId!, { logoAssetId: null }),
-    onSuccess: (company) => {
-      setLogoUploadError(null);
-      syncLogoState(company.logoUrl);
-    }
-  });
-
-  function handleLogoFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
-    event.currentTarget.value = "";
-    if (!file) return;
-    setLogoUploadError(null);
-    logoUploadMutation.mutate(file);
-  }
-
-  function handleClearLogo() {
-    clearLogoMutation.mutate();
-  }
 
   useEffect(() => {
     setInviteError(null);
@@ -197,15 +159,15 @@ export function CompanySettings() {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: selectedCompany?.name ?? "Company", href: "/dashboard" },
-      { label: "Settings" }
+      { label: selectedCompany?.name ?? t('navigation.company'), href: "/dashboard" },
+      { label: t('navigation.settings') }
     ]);
-  }, [setBreadcrumbs, selectedCompany?.name]);
+  }, [setBreadcrumbs, selectedCompany?.name, t]);
 
   if (!selectedCompany) {
     return (
       <div className="text-sm text-muted-foreground">
-        No company selected. Select a company from the switcher above.
+        {t('companySettings.noCompanySelected')}
       </div>
     );
   }
@@ -222,16 +184,16 @@ export function CompanySettings() {
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center gap-2">
         <Settings className="h-5 w-5 text-muted-foreground" />
-        <h1 className="text-lg font-semibold">Company Settings</h1>
+        <h1 className="text-lg font-semibold">{t('companySettings.title')}</h1>
       </div>
 
       {/* General */}
       <div className="space-y-4">
         <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          General
+{t('companySettings.general')}
         </div>
         <div className="space-y-3 rounded-md border border-border px-4 py-4">
-          <Field label="Company name" hint="The display name for your company.">
+          <Field label={t('label.companyName')} hint={t('companySettings.companyNameHint')}>
             <input
               className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
               type="text"
@@ -240,14 +202,14 @@ export function CompanySettings() {
             />
           </Field>
           <Field
-            label="Description"
-            hint="Optional description shown in the company profile."
+            label={t('label.companyDescription')}
+            hint={t('companySettings.descriptionHint')}
           >
             <input
               className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none"
               type="text"
               value={description}
-              placeholder="Optional company description"
+              placeholder={t('placeholder.companyDescription')}
               onChange={(e) => setDescription(e.target.value)}
             />
           </Field>
@@ -257,63 +219,21 @@ export function CompanySettings() {
       {/* Appearance */}
       <div className="space-y-4">
         <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Appearance
+{t('companySettings.appearance')}
         </div>
         <div className="space-y-3 rounded-md border border-border px-4 py-4">
           <div className="flex items-start gap-4">
             <div className="shrink-0">
               <CompanyPatternIcon
                 companyName={companyName || selectedCompany.name}
-                logoUrl={logoUrl || null}
                 brandColor={brandColor || null}
                 className="rounded-[14px]"
               />
             </div>
-            <div className="flex-1 space-y-3">
+            <div className="flex-1 space-y-2">
               <Field
-                label="Logo"
-                hint="Upload a PNG, JPEG, WEBP, GIF, or SVG logo image."
-              >
-                <div className="space-y-2">
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
-                    onChange={handleLogoFileChange}
-                    className="w-full rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm outline-none file:mr-4 file:rounded-md file:border-0 file:bg-muted file:px-2.5 file:py-1 file:text-xs"
-                  />
-                  {logoUrl && (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleClearLogo}
-                        disabled={clearLogoMutation.isPending}
-                      >
-                        {clearLogoMutation.isPending ? "Removing..." : "Remove logo"}
-                      </Button>
-                    </div>
-                  )}
-                  {(logoUploadMutation.isError || logoUploadError) && (
-                    <span className="text-xs text-destructive">
-                      {logoUploadError ??
-                        (logoUploadMutation.error instanceof Error
-                          ? logoUploadMutation.error.message
-                          : "Logo upload failed")}
-                    </span>
-                  )}
-                  {clearLogoMutation.isError && (
-                    <span className="text-xs text-destructive">
-                      {clearLogoMutation.error.message}
-                    </span>
-                  )}
-                  {logoUploadMutation.isPending && (
-                    <span className="text-xs text-muted-foreground">Uploading logo...</span>
-                  )}
-                </div>
-              </Field>
-              <Field
-                label="Brand color"
-                hint="Sets the hue for the company icon. Leave empty for auto-generated color."
+                label={t('label.brandColor')}
+                hint={t('companySettings.brandColorHint')}
               >
                 <div className="flex items-center gap-2">
                   <input
@@ -331,7 +251,7 @@ export function CompanySettings() {
                         setBrandColor(v);
                       }
                     }}
-                    placeholder="Auto"
+                    placeholder={t('common.auto')}
                     className="w-28 rounded-md border border-border bg-transparent px-2.5 py-1.5 text-sm font-mono outline-none"
                   />
                   {brandColor && (
@@ -341,7 +261,7 @@ export function CompanySettings() {
                       onClick={() => setBrandColor("")}
                       className="text-xs text-muted-foreground"
                     >
-                      Clear
+                      {t('common.clear')}
                     </Button>
                   )}
                 </div>
@@ -359,16 +279,16 @@ export function CompanySettings() {
             onClick={handleSaveGeneral}
             disabled={generalMutation.isPending || !companyName.trim()}
           >
-            {generalMutation.isPending ? "Saving..." : "Save changes"}
+            {generalMutation.isPending ? t('common.saving') : t('common.saveChanges')}
           </Button>
           {generalMutation.isSuccess && (
-            <span className="text-xs text-muted-foreground">Saved</span>
+            <span className="text-xs text-muted-foreground">{t('common.saved')}</span>
           )}
           {generalMutation.isError && (
             <span className="text-xs text-destructive">
               {generalMutation.error instanceof Error
-                  ? generalMutation.error.message
-                  : "Failed to save"}
+                ? generalMutation.error.message
+                : t('common.failed')}
             </span>
           )}
         </div>
@@ -377,12 +297,12 @@ export function CompanySettings() {
       {/* Hiring */}
       <div className="space-y-4">
         <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Hiring
+{t('companySettings.hiring')}
         </div>
         <div className="rounded-md border border-border px-4 py-3">
           <ToggleField
-            label="Require board approval for new hires"
-            hint="New agent hires stay pending until approved by board."
+            label={t('label.requireBoardApproval')}
+            hint={t('companySettings.requireBoardApprovalHint')}
             checked={!!selectedCompany.requireBoardApprovalForNewAgents}
             onChange={(v) => settingsMutation.mutate(v)}
           />
@@ -392,14 +312,14 @@ export function CompanySettings() {
       {/* Invites */}
       <div className="space-y-4">
         <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Invites
+{t('companySettings.invites')}
         </div>
         <div className="space-y-3 rounded-md border border-border px-4 py-4">
           <div className="flex items-center gap-1.5">
             <span className="text-xs text-muted-foreground">
-              Generate an OpenClaw agent invite snippet.
+              {t('companySettings.generateInviteDescription')}
             </span>
-            <HintIcon text="Creates a short-lived OpenClaw agent invite and renders a copy-ready prompt." />
+            <HintIcon text={t('companySettings.inviteHint')} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -408,8 +328,8 @@ export function CompanySettings() {
               disabled={inviteMutation.isPending}
             >
               {inviteMutation.isPending
-                ? "Generating..."
-                : "Generate OpenClaw Invite Prompt"}
+                ? t('companySettings.generating')
+                : t('companySettings.generateOpenClawInvitePrompt')}
             </Button>
           </div>
           {inviteError && (
@@ -419,7 +339,7 @@ export function CompanySettings() {
             <div className="rounded-md border border-border bg-muted/30 p-2">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-xs text-muted-foreground">
-                  OpenClaw Invite Prompt
+                  {t('companySettings.openClawInvitePrompt')}
                 </div>
                 {snippetCopied && (
                   <span
@@ -427,7 +347,7 @@ export function CompanySettings() {
                     className="flex items-center gap-1 text-xs text-green-600 animate-pulse"
                   >
                     <Check className="h-3 w-3" />
-                    Copied
+{t('common.copied')}
                   </span>
                 )}
               </div>
@@ -452,7 +372,7 @@ export function CompanySettings() {
                       }
                     }}
                   >
-                    {snippetCopied ? "Copied snippet" : "Copy snippet"}
+                    {snippetCopied ? t('companySettings.copiedSnippet') : t('companySettings.copySnippet')}
                   </Button>
                 </div>
               </div>
@@ -464,12 +384,11 @@ export function CompanySettings() {
       {/* Danger Zone */}
       <div className="space-y-4">
         <div className="text-xs font-medium text-destructive uppercase tracking-wide">
-          Danger Zone
+{t('companySettings.dangerZone')}
         </div>
         <div className="space-y-3 rounded-md border border-destructive/40 bg-destructive/5 px-4 py-4">
           <p className="text-sm text-muted-foreground">
-            Archive this company to hide it from the sidebar. This persists in
-            the database.
+            {t('companySettings.archiveDescription')}
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -482,7 +401,7 @@ export function CompanySettings() {
               onClick={() => {
                 if (!selectedCompanyId) return;
                 const confirmed = window.confirm(
-                  `Archive company "${selectedCompany.name}"? It will be hidden from the sidebar.`
+                  t('companySettings.archiveConfirm', { name: selectedCompany.name })
                 );
                 if (!confirmed) return;
                 const nextCompanyId =
@@ -498,16 +417,16 @@ export function CompanySettings() {
               }}
             >
               {archiveMutation.isPending
-                ? "Archiving..."
+                ? t('companySettings.archiving')
                 : selectedCompany.status === "archived"
-                ? "Already archived"
-                : "Archive company"}
+                ? t('companySettings.alreadyArchived')
+                : t('companySettings.archiveCompany')}
             </Button>
             {archiveMutation.isError && (
               <span className="text-xs text-destructive">
                 {archiveMutation.error instanceof Error
                   ? archiveMutation.error.message
-                  : "Failed to archive company"}
+                  : t('companySettings.failedToArchiveCompany')}
               </span>
             )}
           </div>
