@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "@/lib/router";
 import { useQuery } from "@tanstack/react-query";
 import type { Goal } from "@paperclipai/shared";
@@ -71,6 +72,7 @@ function PickerButton({
 }
 
 export function GoalProperties({ goal, onUpdate }: GoalPropertiesProps) {
+  const { t } = useTranslation();
   const { selectedCompanyId } = useCompany();
 
   const { data: agents } = useQuery({
@@ -96,68 +98,68 @@ export function GoalProperties({ goal, onUpdate }: GoalPropertiesProps) {
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <PropertyRow label="Status">
-          {onUpdate ? (
-            <PickerButton
-              current={goal.status}
-              options={GOAL_STATUSES}
-              onChange={(status) => onUpdate({ status })}
-            >
-              <StatusBadge status={goal.status} />
-            </PickerButton>
-          ) : (
-            <StatusBadge status={goal.status} />
-          )}
-        </PropertyRow>
+         <PropertyRow label={t('goal.properties.status')}>
+           {onUpdate ? (
+             <PickerButton
+               current={goal.status}
+               options={GOAL_STATUSES}
+               onChange={(status) => onUpdate({ status })}
+             >
+               <StatusBadge status={goal.status} />
+             </PickerButton>
+           ) : (
+             <StatusBadge status={goal.status} />
+           )}
+         </PropertyRow>
 
-        <PropertyRow label="Level">
-          {onUpdate ? (
-            <PickerButton
-              current={goal.level}
-              options={GOAL_LEVELS}
-              onChange={(level) => onUpdate({ level })}
-            >
-              <span className="text-sm capitalize">{goal.level}</span>
-            </PickerButton>
-          ) : (
-            <span className="text-sm capitalize">{goal.level}</span>
-          )}
-        </PropertyRow>
+         <PropertyRow label={t('goal.properties.level')}>
+           {onUpdate ? (
+             <PickerButton
+               current={goal.level}
+               options={GOAL_LEVELS}
+               onChange={(level) => onUpdate({ level })}
+             >
+               <span className="text-sm capitalize">{goal.level}</span>
+             </PickerButton>
+           ) : (
+             <span className="text-sm capitalize">{goal.level}</span>
+           )}
+         </PropertyRow>
 
-        <PropertyRow label="Owner">
-          {ownerAgent ? (
-            <Link
-              to={agentUrl(ownerAgent)}
-              className="text-sm hover:underline"
-            >
-              {ownerAgent.name}
-            </Link>
-          ) : (
-            <span className="text-sm text-muted-foreground">None</span>
-          )}
-        </PropertyRow>
+         <PropertyRow label={t('goal.properties.owner')}>
+           {ownerAgent ? (
+             <Link
+               to={agentUrl(ownerAgent)}
+               className="text-sm hover:underline"
+             >
+               {ownerAgent.name}
+             </Link>
+           ) : (
+             <span className="text-sm text-muted-foreground">{t('goal.properties.none')}</span>
+           )}
+         </PropertyRow>
 
-        {goal.parentId && (
-          <PropertyRow label="Parent Goal">
-            <Link
-              to={`/goals/${goal.parentId}`}
-              className="text-sm hover:underline"
-            >
-              {parentGoal?.title ?? goal.parentId.slice(0, 8)}
-            </Link>
-          </PropertyRow>
-        )}
+         {goal.parentId && (
+           <PropertyRow label={t('goal.properties.parentGoal')}>
+             <Link
+               to={`/goals/${goal.parentId}`}
+               className="text-sm hover:underline"
+             >
+               {parentGoal?.title ?? goal.parentId.slice(0, 8)}
+             </Link>
+           </PropertyRow>
+         )}
       </div>
 
       <Separator />
 
       <div className="space-y-1">
-        <PropertyRow label="Created">
-          <span className="text-sm">{formatDate(goal.createdAt)}</span>
-        </PropertyRow>
-        <PropertyRow label="Updated">
-          <span className="text-sm">{formatDate(goal.updatedAt)}</span>
-        </PropertyRow>
+         <PropertyRow label={t('goal.properties.created')}>
+           <span className="text-sm">{formatDate(goal.createdAt)}</span>
+         </PropertyRow>
+         <PropertyRow label={t('goal.properties.updated')}>
+           <span className="text-sm">{formatDate(goal.updatedAt)}</span>
+         </PropertyRow>
       </div>
     </div>
   );

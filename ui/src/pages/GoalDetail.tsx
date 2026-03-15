@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams } from "@/lib/router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { goalsApi } from "../api/goals";
@@ -22,6 +23,7 @@ import { Plus } from "lucide-react";
 import type { Goal, Project } from "@paperclipai/shared";
 
 export function GoalDetail() {
+  const { t } = useTranslation();
   const { goalId } = useParams<{ goalId: string }>();
   const { selectedCompanyId, setSelectedCompanyId } = useCompany();
   const { openNewGoal } = useDialog();
@@ -93,10 +95,10 @@ export function GoalDetail() {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: "Goals", href: "/goals" },
-      { label: goal?.title ?? goalId ?? "Goal" }
+      { label: t('goal.list.title'), href: "/goals" },
+      { label: goal?.title ?? goalId ?? t('goal.detail.title') }
     ]);
-  }, [setBreadcrumbs, goal, goalId]);
+  }, [setBreadcrumbs, goal, goalId, t]);
 
   useEffect(() => {
     if (goal) {
@@ -131,65 +133,65 @@ export function GoalDetail() {
           className="text-xl font-bold"
         />
 
-        <InlineEditor
-          value={goal.description ?? ""}
-          onSave={(description) => updateGoal.mutate({ description })}
-          as="p"
-          className="text-sm text-muted-foreground"
-          placeholder="Add a description..."
-          multiline
-          imageUploadHandler={async (file) => {
-            const asset = await uploadImage.mutateAsync(file);
-            return asset.contentPath;
-          }}
-        />
+         <InlineEditor
+           value={goal.description ?? ""}
+           onSave={(description) => updateGoal.mutate({ description })}
+           as="p"
+           className="text-sm text-muted-foreground"
+           placeholder={t('goal.detail.addDescription')}
+           multiline
+           imageUploadHandler={async (file) => {
+             const asset = await uploadImage.mutateAsync(file);
+             return asset.contentPath;
+           }}
+         />
       </div>
 
-      <Tabs defaultValue="children">
-        <TabsList>
-          <TabsTrigger value="children">
-            Sub-Goals ({childGoals.length})
-          </TabsTrigger>
-          <TabsTrigger value="projects">
-            Projects ({linkedProjects.length})
-          </TabsTrigger>
-        </TabsList>
+       <Tabs defaultValue="children">
+         <TabsList>
+           <TabsTrigger value="children">
+             {t('goal.detail.subGoals', { count: childGoals.length })}
+           </TabsTrigger>
+           <TabsTrigger value="projects">
+             {t('goal.detail.projects', { count: linkedProjects.length })}
+           </TabsTrigger>
+         </TabsList>
 
         <TabsContent value="children" className="mt-4 space-y-3">
           <div className="flex items-center justify-start">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => openNewGoal({ parentId: goalId })}
-            >
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
-              Sub Goal
-            </Button>
+             <Button
+               size="sm"
+               variant="outline"
+               onClick={() => openNewGoal({ parentId: goalId })}
+             >
+               <Plus className="h-3.5 w-3.5 mr-1.5" />
+               {t('goal.detail.newSubGoal')}
+             </Button>
           </div>
-          {childGoals.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No sub-goals.</p>
-          ) : (
-            <GoalTree goals={childGoals} goalLink={(g) => `/goals/${g.id}`} />
-          )}
+           {childGoals.length === 0 ? (
+             <p className="text-sm text-muted-foreground">{t('goal.detail.noSubGoals')}</p>
+           ) : (
+             <GoalTree goals={childGoals} goalLink={(g) => `/goals/${g.id}`} />
+           )}
         </TabsContent>
 
-        <TabsContent value="projects" className="mt-4">
-          {linkedProjects.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No linked projects.</p>
-          ) : (
-            <div className="border border-border">
-              {linkedProjects.map((project) => (
-                <EntityRow
-                  key={project.id}
-                  title={project.name}
-                  subtitle={project.description ?? undefined}
-                  to={projectUrl(project)}
-                  trailing={<StatusBadge status={project.status} />}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+         <TabsContent value="projects" className="mt-4">
+           {linkedProjects.length === 0 ? (
+             <p className="text-sm text-muted-foreground">{t('goal.detail.noLinkedProjects')}</p>
+           ) : (
+             <div className="border border-border">
+               {linkedProjects.map((project) => (
+                 <EntityRow
+                   key={project.id}
+                   title={project.name}
+                   subtitle={project.description ?? undefined}
+                   to={projectUrl(project)}
+                   trailing={<StatusBadge status={project.status} />}
+                 />
+               ))}
+             </div>
+           )}
+         </TabsContent>
       </Tabs>
     </div>
   );
