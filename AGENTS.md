@@ -103,7 +103,46 @@ Notes:
 - `packages/db/drizzle.config.ts` reads compiled schema from `dist/schema/*.js`
 - `pnpm db:generate` compiles `packages/db` first
 
-## 7. Verification Before Hand-off
+## 7. Build, Lint, and Test Commands
+
+### Core Commands
+```sh
+pnpm install          # Install all dependencies (do NOT commit pnpm-lock.yaml)
+pnpm dev              # Full dev mode (API + UI, watch mode with auto-restart)
+pnpm dev:server       # Run server only in watch mode
+pnpm dev:ui           # Run UI only in watch mode
+pnpm build            # Build all packages and applications
+pnpm typecheck        # Run TypeScript type checking across all modules
+pnpm db:generate      # Generate new Drizzle migration after schema changes
+pnpm db:migrate       # Apply database migrations
+pnpm paperclipai      # Run Paperclip CLI commands
+```
+
+### Test Execution
+```sh
+pnpm test:run         # Run all tests (headless)
+pnpm test             # Run tests in watch mode
+
+# Run a single test file
+pnpm test:run path/to/file.test.ts
+
+# Run tests in a specific package
+pnpm --filter @paperclipai/server test:run
+pnpm --filter @paperclipai/db test:run
+
+# E2E testing
+pnpm test:e2e         # Run all end-to-end tests
+pnpm test:e2e:headed  # Run E2E tests in headed mode for debugging
+```
+
+### Additional Tooling
+```sh
+pnpm changeset        # Create a new changeset for versioning
+pnpm check:tokens     # Check for forbidden tokens/secrets in code
+pnpm db:backup        # Create a backup of the local database
+```
+
+## 8. Verification Before Hand-off
 
 Run this full check before claiming done:
 
@@ -115,7 +154,71 @@ pnpm build
 
 If anything cannot be run, explicitly report what was not run and why.
 
-## 8. API and Auth Expectations
+## 9. Code Style Guidelines
+
+### Imports
+- Use ES module syntax (`import`/`export`) exclusively
+- Order imports: 1) Node.js builtins, 2) External dependencies, 3) Internal workspace packages (`@paperclipai/*`), 4) Relative imports (parent directories first, then same directory)
+- Type imports must use `import type` explicitly
+- Avoid wildcard imports except for schema/type collections
+
+```typescript
+// Good
+import { createHash } from "node:crypto";
+import { eq } from "drizzle-orm";
+import type { Db } from "@paperclipai/db";
+import { agents } from "@paperclipai/db";
+import { conflict } from "../errors.js";
+import { normalizeAgentPermissions } from "./agent-permissions.js";
+```
+
+### Formatting
+- 2 spaces for indentation
+- Max line length: 120 characters
+- Use single quotes for strings (backticks for template literals)
+- Add trailing commas in arrays/objects/imports
+- No semicolons (ASI is acceptable)
+- Prefer `const` over `let`, never use `var`
+- Arrow functions preferred for callbacks and short functions
+
+### Naming Conventions
+- **Files**: kebab-case (`agent-permissions.ts`, `create-company.tsx`)
+- **Variables/functions**: camelCase (`hashToken`, `agentRuntimeState`)
+- **Types/Interfaces/Classes**: PascalCase (`AgentConfigSnapshot`, `UpdateAgentOptions`)
+- **Constants**: UPPER_SNAKE_CASE (`CONFIG_REVISION_FIELDS`, `REDACTED_EVENT_VALUE`)
+- **Database columns**: snake_case (matches schema definitions)
+- **React components**: PascalCase with `.tsx` extension
+- **Boolean variables/functions**: prefix with `is`, `has`, `should`, `can` (`isUuidLike`, `shouldNotify`)
+
+### TypeScript Practices
+- All function parameters and return types must be explicitly typed
+- Do NOT use `any`, `@ts-ignore`, or `@ts-expect-error` - fix the type issue properly
+- Prefer type unions over enums for state values
+- Use Zod for runtime validation of all external inputs (API requests, adapter responses)
+- Extract shared types to `packages/shared` to avoid duplication
+- Use readonly modifiers for immutable data structures
+
+### Error Handling
+- Throw errors for exceptional cases, do not return null/undefined for failures
+- Use custom error classes from `server/src/errors.js` for API errors:
+  - `conflict()` - 409 Conflict (resource already exists, atomic checkout failure)
+  - `notFound()` - 404 Not Found
+  - `unprocessable()` - 422 Unprocessable Entity (validation failure)
+  - `unauthorized()` - 401 Unauthorized
+  - `forbidden()` - 403 Forbidden
+  - `badRequest()` - 400 Bad Request
+- Always log full error details before returning to client
+- Never expose internal stack traces or database details in API responses
+
+### Security Conventions
+- All database queries must include company_id filtering for multi-company isolation
+- API keys are hashed with SHA-256 at rest - never store plaintext keys
+- Sanitize all user input before storing/processing
+- Write activity log entries for all mutating operations
+- Agent keys have restricted permissions - never grant full board access to agents
+- Secrets are never logged or serialized in API responses
+
+## 10. API and Auth Expectations
 
 - Base path: `/api`
 - Board access is treated as full-control operator context
@@ -129,13 +232,13 @@ When adding endpoints:
 - write activity log entries for mutations
 - return consistent HTTP errors (`400/401/403/404/409/422/500`)
 
-## 9. UI Expectations
+## 11. UI Expectations
 
 - Keep routes and nav aligned with available API surface
 - Use company selection context for company-scoped pages
 - Surface failures clearly; do not silently ignore API errors
 
-## 10. Definition of Done
+## 12. Definition of Done
 
 A change is done when all are true:
 
