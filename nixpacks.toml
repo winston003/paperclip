@@ -9,7 +9,10 @@ cmds = [
 
 [phases.build]
 cmds = [
-  "pnpm -r build"
+  "pnpm -r --filter @paperclipai/shared --filter @paperclipai/db --filter @paperclipai/adapter-utils build",
+  "pnpm -r --filter @paperclipai/adapters/* build",
+  "pnpm -r --filter @paperclipai/ui build",
+  "pnpm -r --filter @paperclipai/server build"
 ]
 
 [start]
