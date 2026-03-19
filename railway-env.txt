@@ -1,0 +1,21 @@
+# Railway 环境变量配置
+# 复制以下内容到 Railway Dashboard → Variables
+
+# 基础配置
+NODE_ENV=production
+
+# 部署模式
+PAPERCLIP_DEPLOYMENT_MODE=authenticated
+PAPERCLIP_DEPLOYMENT_EXPOSURE=public
+PAPERCLIP_PUBLIC_URL=${{RAILWAY_PUBLIC_DOMAIN}}
+
+# 认证
+BETTER_AUTH_URL=https://${{RAILWAY_PUBLIC_DOMAIN}}
+BETTER_AUTH_SECRET=${{secrets.BETTER_AUTH_SECRET}}
+
+# JWT
+JWT_SECRET=${{secrets.JWT_SECRET}}
+
+# Secrets 配置（在 Railway Secrets 中设置）
+# BETTER_AUTH_SECRET: openssl rand -base64 32
+# JWT_SECRET: openssl rand -base64 32

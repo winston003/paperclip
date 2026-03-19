@@ -1,32 +1,66 @@
+<!-- OPENSPEC:START -->
+# OpenSpec Instructions
+
+These instructions are for AI assistants working in this project.
+
+Always open `@/openspec/AGENTS.md` when the request:
+- Mentions planning or proposals (words like proposal, spec, change, plan)
+- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
+- Sounds ambiguous and you need the authoritative spec before coding
+
+Use `@/openspec/AGENTS.md` to learn:
+- How to create and apply change proposals
+- Spec format and conventions
+- Project structure and guidelines
+
+Keep this managed block so 'openspec update' can refresh the instructions.
+
+<!-- OPENSPEC:END -->
+
 # AGENTS.md
+
+**Generated:** 2026-03-19
+**Commit:** bbd7fa9
+**Branch:** feat/add-chinese-localization
 
 Guidance for human and AI contributors working in this repository.
 
 ## 1. Purpose
 
-Paperclip is a control plane for AI-agent companies.
-The current implementation target is V1 and is defined in `doc/SPEC-implementation.md`.
+Paperclip is a control plane for AI-agent companies — orchestration infrastructure for autonomous AI workforces with org charts, budgets, governance, and goal alignment. V1 implementation contract is in `doc/SPEC-implementation.md`.
 
 ## 2. Read This First
 
 Before making changes, read in this order:
 
-1. `doc/GOAL.md`
-2. `doc/PRODUCT.md`
-3. `doc/SPEC-implementation.md`
-4. `doc/DEVELOPING.md`
-5. `doc/DATABASE.md`
+1. `doc/GOAL.md` — Vision and objectives
+2. `doc/PRODUCT.md` — Product boundaries
+3. `doc/SPEC-implementation.md` — V1 build contract
+4. `doc/DEVELOPING.md` — Dev setup and workflows
+5. `doc/DATABASE.md` — Schema and migrations
 
 `doc/SPEC.md` is long-horizon product context.
-`doc/SPEC-implementation.md` is the concrete V1 build contract.
 
 ## 3. Repo Map
 
-- `server/`: Express REST API and orchestration services
-- `ui/`: React + Vite board UI
-- `packages/db/`: Drizzle schema, migrations, DB clients
-- `packages/shared/`: shared types, constants, validators, API path constants
-- `doc/`: operational and product docs
+```
+paperclip/
+├── server/           # Express REST API, auth, orchestration
+│   └── src/services/ # Business logic (heartbeat, budgets, tasks) [AGENTS.md]
+├── ui/               # React + Vite board operator UI
+│   └── src/components/ # UI components, forms, context [AGENTS.md]
+├── packages/
+│   ├── db/           # Drizzle schema, migrations, DB clients
+│   │   └── src/schema/ # Table definitions [AGENTS.md]
+│   ├── shared/       # Types, constants, validators, API paths
+│   ├── adapters/     # Agent adapters (claude-local, openclaw, etc.)
+│   └── plugins/      # Plugin SDK and examples
+├── cli/              # paperclipai CLI (setup + client commands)
+├── skills/           # AI agent skills for Paperclip integration
+├── doc/              # Internal docs, specs, plans
+├── docs/             # Public docs (website)
+└── tests/            # E2E tests (Playwright)
+```
 
 ## 4. Dev Setup (Auto DB)
 
@@ -58,28 +92,24 @@ pnpm dev
 
 ## 5. Core Engineering Rules
 
-1. Keep changes company-scoped.
-Every domain entity should be scoped to a company and company boundaries must be enforced in routes/services.
+1. **Keep changes company-scoped.** Every domain entity should be scoped to a company and company boundaries must be enforced in routes/services.
 
-2. Keep contracts synchronized.
-If you change schema/API behavior, update all impacted layers:
-- `packages/db` schema and exports
-- `packages/shared` types/constants/validators
-- `server` routes/services
-- `ui` API clients and pages
+2. **Keep contracts synchronized.** If you change schema/API behavior, update all impacted layers:
+   - `packages/db` schema and exports
+   - `packages/shared` types/constants/validators
+   - `server` routes/services
+   - `ui` API clients and pages
 
-3. Preserve control-plane invariants.
-- Single-assignee task model
-- Atomic issue checkout semantics
-- Approval gates for governed actions
-- Budget hard-stop auto-pause behavior
-- Activity logging for mutating actions
+3. **Preserve control-plane invariants.**
+   - Single-assignee task model
+   - Atomic issue checkout semantics
+   - Approval gates for governed actions
+   - Budget hard-stop auto-pause behavior
+   - Activity logging for mutating actions
 
-4. Do not replace strategic docs wholesale unless asked.
-Prefer additive updates. Keep `doc/SPEC.md` and `doc/SPEC-implementation.md` aligned.
+4. **Do not replace strategic docs wholesale unless asked.** Prefer additive updates. Keep `doc/SPEC.md` and `doc/SPEC-implementation.md` aligned.
 
-5. Keep plan docs dated and centralized.
-New plan documents belong in `doc/plans/` and should use `YYYY-MM-DD-slug.md` filenames.
+5. **Keep plan docs dated and centralized.** New plan documents belong in `doc/plans/` and should use `YYYY-MM-DD-slug.md` filenames.
 
 ## 6. Database Change Workflow
 

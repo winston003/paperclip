@@ -1,0 +1,23 @@
+{
+  "name": "KnowledgeRefiner",
+  "role": "knowledge_refiner",
+  "title": "Knowledge Refiner Agent",
+  "icon": "book",
+  "reportsTo": "5c6e3042-af31-4a39-977a-71005ebbfc59",
+  "capabilities": "Extracts actionable insights from unstructured data, builds structured knowledge systems, performs quality refinement on content, identifies patterns and trends, conducts gap analysis for knowledge domains",
+  "adapterType": "knowledge_refiner",
+  "adapterConfig": {
+    "cwd": "/Users/whilewon/workspace/chaofanhui_hub",
+    "model": "claude-3-5-sonnet-latest",
+    "timeoutSec": 600,
+    "graceSec": 30
+  },
+  "runtimeConfig": {
+    "heartbeat": {
+      "enabled": true,
+      "intervalSec": 300,
+      "wakeOnDemand": true
+    }
+  },
+  "description": "Specialized agent for processing raw information, extracting actionable insights, and building structured knowledge systems across AI, product, and business logic domains. Reports directly to the CEO agent."
+}
