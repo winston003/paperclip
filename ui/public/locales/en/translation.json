@@ -182,7 +182,10 @@
     "enableChrome": "Enable Chrome",
     "skipPermissions": "Skip permissions",
     "maxTurnsPerRun": "Max turns per run",
-    "knowledgeRefiner": "Knowledge Refiner"
+    "knowledgeRefiner": "Knowledge Refiner",
+    "name": "Name",
+    "icon": "Icon",
+    "capabilities": "Capabilities"
   },
   "dashboard": {
     "agentsEnabled": "Agents Enabled",
@@ -295,6 +298,66 @@
   "select": {
     "selectStatus": "Select status",
     "language": "Language"
+  },
+  "language": {
+    "en": "English",
+    "zh": "中文"
+  },
+  "newAgent": {
+    "title": "Add a new agent",
+    "defaultTitle": "Create a new agent",
+    "defaultDescription": "(type in what kind of agent you want here)",
+    "recommendation": "We recommend letting your CEO handle agent setup — they know the\norg structure and can configure reporting, permissions, and\nadapters.",
+    "askCeo": "Ask the CEO to create a new agent",
+    "advanced": "I want advanced configuration myself",
+    "chooseAdapter": "Choose your adapter type for advanced setup.",
+    "recommended": "Recommended"
+  },
+  "activity": {
+    "issueCreated": "created",
+    "issueUpdated": "updated",
+    "issueCheckedOut": "checked out",
+    "issueReleased": "released",
+    "issueCommentAdded": "commented on",
+    "issueAttachmentAdded": "attached file to",
+    "issueAttachmentRemoved": "removed attachment from",
+    "issueDocumentCreated": "created document for",
+    "issueDocumentUpdated": "updated document on",
+    "issueDocumentDeleted": "deleted document from",
+    "issueCommented": "commented on",
+    "issueDeleted": "deleted",
+    "agentCreated": "created",
+    "agentUpdated": "updated",
+    "agentPaused": "paused",
+    "agentResumed": "resumed",
+    "agentTerminated": "terminated",
+    "agentKeyCreated": "created API key for",
+    "agentBudgetUpdated": "updated budget for",
+    "agentSessionReset": "reset session for",
+    "heartbeatInvoked": "invoked heartbeat for",
+    "heartbeatCancelled": "cancelled heartbeat for",
+    "approvalRequested": "requested approval",
+    "approvalApproved": "approved",
+    "approvalRejected": "rejected",
+    "projectCreated": "created",
+    "projectUpdated": "updated",
+    "projectDeleted": "deleted",
+    "goalCreated": "created",
+    "goalUpdated": "updated",
+    "goalDeleted": "deleted",
+    "costReported": "reported cost for",
+    "costRecorded": "recorded cost for",
+    "companyCreated": "created company",
+    "companyUpdated": "updated company",
+    "companyArchived": "archived company",
+    "companyBudgetUpdated": "updated budget for",
+    "changedStatusFromTo": "changed status from {{from}} to {{to}} on",
+    "changedStatusTo": "changed status to {{to}} on",
+    "changedPriorityFromTo": "changed priority from {{from}} to {{to}} on",
+    "changedPriorityTo": "changed priority to {{to}} on",
+    "system": "System",
+    "board": "Board",
+    "unknown": "Unknown"
   },
   "aria": {
     "zoomIn": "Zoom in",
@@ -700,6 +763,17 @@
       "empty": "No projects yet.",
       "addProject": "Add Project"
     },
+    "properties": {
+      "branchTemplate": "Branch template",
+      "worktreeParentDir": "Worktree parent dir",
+      "provisionCommand": "Provision command",
+      "teardownCommand": "Teardown command",
+      "branchTemplatePlaceholder": "{{issue.identifier}}-{{slug}}",
+      "worktreeParentDirPlaceholder": ".paperclip/worktrees",
+      "provisionCommandPlaceholder": "bash ./scripts/provision-worktree.sh",
+      "teardownCommandPlaceholder": "bash ./scripts/teardown-worktree.sh"
+    },
+    "provisionTeardownDescription": "Provision runs inside the derived worktree before agent execution. Teardown is stored here for future cleanup flows.",
     "detail": {
       "title": "Project",
       "addDescription": "Add a description...",
@@ -877,12 +951,21 @@
     "disableTimerHeartbeat": "Disable Timer Heartbeat"
   },
   "agentConfig": {
+    "identity": "Identity",
     "name": "Name",
     "title": "Title",
     "capabilities": "Capabilities",
     "promptTemplate": "Prompt Template",
     "adapterType": "Adapter type",
     "workingDirectory": "Working directory",
+    "permissionsConfiguration": "Permissions & Configuration",
+    "runPolicy": "Run Policy",
+    "heartbeatOnInterval": "Heartbeat on interval",
+    "runHeartbeatEvery": "Run heartbeat every",
+    "advancedRunPolicy": "Advanced Run Policy",
+    "wakeOnDemand": "Wake on demand",
+    "cooldownSec": "Cooldown (sec)",
+    "maxConcurrentRuns": "Max concurrent runs",
     "command": "Command",
     "bootstrapPrompt": "Bootstrap prompt (first run)",
     "extraArgs": "Extra args (comma-separated)",
@@ -1009,6 +1092,33 @@
     "creating": "Creating...",
     "create": "Create project"
   },
+  "experimental": {
+    "title": "Experimental",
+    "description": "Opt into features that are still being evaluated before they become default behavior.",
+    "loading": "Loading experimental settings...",
+    "loadFailed": "Failed to load experimental settings.",
+    "updateFailed": "Failed to update experimental settings.",
+    "enableIsolatedWorkspaces": "Enabled Isolated Workspaces",
+    "enableIsolatedWorkspacesDescription": "Show execution workspace controls in project configuration and allow isolated workspace behavior for new and existing issue runs.",
+    "toggleAriaLabel": "Toggle isolated workspaces experimental setting"
+  },
+  "plugin": {
+    "manager": {
+      "title": "Plugin Manager",
+      "installPlugin": "Install Plugin",
+      "installPluginDescription": "Install a new plugin to your Paperclip instance from npm.",
+      "packageName": "Package Name",
+      "install": "Install",
+      "cancel": "Cancel",
+      "installSuccess": "Plugin installed successfully",
+      "installSuccessDescription": "The plugin will be installed and enabled automatically.",
+      "uninstall": "Uninstall Plugin",
+      "uninstallSuccess": "Plugin uninstalled successfully",
+      "uninstallSuccessDescription": "The plugin has been removed.",
+      "noPluginsInstalled": "No plugins installed.",
+      "errorLoading": "Failed to load plugin list."
+    }
+  },
   "transcript": {
     "user": "User",
     "streaming": "Streaming",
@@ -1033,5 +1143,27 @@
     "expandCommandDetails": "Expand command details",
     "collapseStdout": "Collapse stdout",
     "expandStdout": "Expand stdout"
+  },
+  "issueDocument": {
+    "documents": "Documents",
+    "newDocument": "New document",
+    "createDocument": "Create document",
+    "expandDocument": "Expand {{key}} document",
+    "collapseDocument": "Collapse {{key}} document",
+    "copied": "Copied",
+    "copyDocument": "Copy document",
+    "documentActions": "Document actions",
+    "downloadDocument": "Download document",
+    "deleteDocument": "Delete document",
+    "outOfDate": "Out of date",
+    "conflictDescription": "This document changed while you were editing. Your local draft is preserved and autosave is paused.",
+    "hideRemote": "Hide remote",
+    "reviewRemote": "Review remote",
+    "keepMyDraft": "Keep my draft",
+    "reloadRemote": "Reload remote",
+    "overwriteRemote": "Overwrite remote",
+    "remoteRevision": "Remote revision {{rev}}",
+    "updated": "updated {{time}}",
+    "deleteConfirmation": "Delete this document? This cannot be undone."
   }
 }

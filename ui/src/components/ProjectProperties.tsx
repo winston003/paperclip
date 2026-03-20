@@ -848,29 +848,76 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
                          placeholder={t('project.properties.baseRefPlaceholder')}
                        />
                     </div>
-                    <div>
-                      <div className="mb-1 flex items-center gap-1.5">
-                        <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>Branch template</span>
-                          <SaveIndicator state={fieldState("execution_workspace_branch_template")} />
-                        </label>
-                      </div>
-                      <DraftInput
-                        value={executionWorkspaceStrategy.branchTemplate ?? ""}
-                        onCommit={(value) =>
-                          commitField("execution_workspace_branch_template", {
-                            ...updateExecutionWorkspacePolicy({
-                              workspaceStrategy: {
-                                ...executionWorkspaceStrategy,
-                                type: "git_worktree",
-                                branchTemplate: value || null,
-                              },
-                            })!,
-                          })}
-                        immediate
-                        className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
-                        placeholder="{{issue.identifier}}-{{slug}}"
-                      />
+                     <div>
+                       <div className="mb-1 flex items-center gap-1.5">
+                         <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                           <span>{t('project.properties.branchTemplate')}</span>
+                           <SaveIndicator state={fieldState("execution_workspace_branch_template")} />
+                         </label>
+                       </div>
+                       <DraftInput
+                         value={executionWorkspaceStrategy.branchTemplate ?? ""}
+                         onCommit={(value) =>
+                           commitField("execution_workspace_branch_template", {
+                             ...updateExecutionWorkspacePolicy({
+                               workspaceStrategy: {
+                                 ...executionWorkspaceStrategy,
+                                 type: "git_worktree",
+                                 branchTemplate: value || null,
+                               },
+                             })!,
+                           })}
+                         immediate
+                         className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
+                         placeholder={t('project.properties.branchTemplatePlaceholder')}
+                       />
+                     </div>
+                     <div>
+                       <div className="mb-1 flex items-center gap-1.5">
+                         <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                           <span>{t('project.properties.worktreeParentDir')}</span>
+                           <SaveIndicator state={fieldState("execution_workspace_worktree_parent_dir")} />
+                         </label>
+                       </div>
+                       <DraftInput
+                         value={executionWorkspaceStrategy.worktreeParentDir ?? ""}
+                         onCommit={(value) =>
+                           commitField("execution_workspace_worktree_parent_dir", {
+                             ...updateExecutionWorkspacePolicy({
+                               workspaceStrategy: {
+                                 ...executionWorkspaceStrategy,
+                                 type: "git_worktree",
+                                 worktreeParentDir: value || null,
+                               },
+                             })!,
+                           })}
+                         immediate
+                         className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
+                         placeholder={t('project.properties.worktreeParentDirPlaceholder')}
+                       />
+                     </div>
+                     <div>
+                       <div className="mb-1 flex items-center gap-1.5">
+                         <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                           <span>{t('project.properties.provisionCommand')}</span>
+                           <SaveIndicator state={fieldState("execution_workspace_provision_command")} />
+                         </label>
+                       </div>
+                       <DraftInput
+                         value={executionWorkspaceStrategy.provisionCommand ?? ""}
+                         onCommit={(value) =>
+                           commitField("execution_workspace_provision_command", {
+                             ...updateExecutionWorkspacePolicy({
+                               workspaceStrategy: {
+                                 ...executionWorkspaceStrategy,
+                                 provisionCommand: value || null,
+                               },
+                             })!,
+                           })}
+                         immediate
+                         className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
+                         placeholder={t('project.properties.provisionCommandPlaceholder')}
+                       />
                     </div>
                     <div>
                       <div className="mb-1 flex items-center gap-1.5">
@@ -919,35 +966,34 @@ export function ProjectProperties({ project, onUpdate, onFieldUpdate, getFieldSa
                         className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
                         placeholder="bash ./scripts/provision-worktree.sh"
                       />
-                    </div>
-                    <div>
-                      <div className="mb-1 flex items-center gap-1.5">
-                        <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>Teardown command</span>
-                          <SaveIndicator state={fieldState("execution_workspace_teardown_command")} />
-                        </label>
-                      </div>
-                      <DraftInput
-                        value={executionWorkspaceStrategy.teardownCommand ?? ""}
-                        onCommit={(value) =>
-                          commitField("execution_workspace_teardown_command", {
-                            ...updateExecutionWorkspacePolicy({
-                              workspaceStrategy: {
-                                ...executionWorkspaceStrategy,
-                                type: "git_worktree",
-                                teardownCommand: value || null,
-                              },
-                            })!,
-                          })}
-                        immediate
-                        className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
-                        placeholder="bash ./scripts/teardown-worktree.sh"
-                      />
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      Provision runs inside the derived worktree before agent execution. Teardown is stored here for
-                      future cleanup flows.
-                    </p>
+                     </div>
+                     <div>
+                       <div className="mb-1 flex items-center gap-1.5">
+                         <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                           <span>{t('project.properties.teardownCommand')}</span>
+                           <SaveIndicator state={fieldState("execution_workspace_teardown_command")} />
+                         </label>
+                       </div>
+                       <DraftInput
+                         value={executionWorkspaceStrategy.teardownCommand ?? ""}
+                         onCommit={(value) =>
+                           commitField("execution_workspace_teardown_command", {
+                             ...updateExecutionWorkspacePolicy({
+                               workspaceStrategy: {
+                                 ...executionWorkspaceStrategy,
+                                 type: "git_worktree",
+                                 teardownCommand: value || null,
+                               },
+                             })!,
+                           })}
+                         immediate
+                         className="w-full rounded border border-border bg-transparent px-2 py-1 text-xs font-mono outline-none"
+                         placeholder={t('project.properties.teardownCommandPlaceholder')}
+                       />
+                     </div>
+                     <p className="text-[11px] text-muted-foreground">
+                       {t('project.provisionTeardownDescription')}
+                     </p>
                   </div>
                 )}
               </>

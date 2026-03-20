@@ -9,7 +9,7 @@ import { useBreadcrumbs } from "../context/BreadcrumbContext";
 import { queryKeys } from "../lib/queryKeys";
 import { StatusBadge } from "../components/StatusBadge";
 import { Identity } from "../components/Identity";
-import { typeLabel, typeIcon, defaultTypeIcon, ApprovalPayloadRenderer } from "../components/ApprovalPayload";
+import { getTypeLabel, typeIcon, defaultTypeIcon, ApprovalPayloadRenderer } from "../components/ApprovalPayload";
 import { PageSkeleton } from "../components/PageSkeleton";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -200,12 +200,12 @@ export function ApprovalDetail() {
           </div>
         </div>
       )}
-      <div className="border border-border rounded-lg p-4 space-y-3">
+         <div className="border border-border rounded-lg p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <TypeIcon className="h-5 w-5 text-muted-foreground shrink-0" />
             <div>
-              <h2 className="text-lg font-semibold">{typeLabel[approval.type] ?? approval.type.replace(/_/g, " ")}</h2>
+              <h2 className="text-lg font-semibold">{getTypeLabel(t)[approval.type] ?? approval.type.replace(/_/g, " ")}</h2>
               <p className="text-xs text-muted-foreground font-mono">{approval.id}</p>
             </div>
           </div>

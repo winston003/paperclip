@@ -602,10 +602,10 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
       {/* ---- Permissions & Configuration ---- */}
       {isLocal && (
         <div className={cn(!cards && "border-b border-border")}>
-          {cards
-            ? <h3 className="text-sm font-medium mb-3">Permissions &amp; Configuration</h3>
-            : <div className="px-4 py-2 text-xs font-medium text-muted-foreground">Permissions &amp; Configuration</div>
-          }
+           {cards
+             ? <h3 className="text-sm font-medium mb-3">{t('agentConfig.permissionsConfiguration')}</h3>
+             : <div className="px-4 py-2 text-xs font-medium text-muted-foreground">{t('agentConfig.permissionsConfiguration')}</div>
+           }
           <div className={cn(cards ? "border border-border rounded-lg p-4 space-y-3" : "px-4 pb-3 space-y-3")}>
               <Field label={t('agentConfig.command')} hint={help.localCommand}>
                 <DraftInput
@@ -804,12 +804,12 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
             />
           </div>
         </div>
-      ) : (
-        <div className={cn(!cards && "border-b border-border")}>
-          {cards
-            ? <h3 className="text-sm font-medium flex items-center gap-2 mb-3"><Heart className="h-3 w-3" /> Run Policy</h3>
-            : <div className="px-4 py-2 text-xs font-medium text-muted-foreground flex items-center gap-2"><Heart className="h-3 w-3" /> Run Policy</div>
-          }
+       ) : (
+         <div className={cn(!cards && "border-b border-border")}>
+           {cards
+             ? <h3 className="text-sm font-medium flex items-center gap-2 mb-3"><Heart className="h-3 w-3" /> {t('agentConfig.runPolicy')}</h3>
+             : <div className="px-4 py-2 text-xs font-medium text-muted-foreground flex items-center gap-2"><Heart className="h-3 w-3" /> {t('agentConfig.runPolicy')}</div>
+           }
           <div className={cn(cards ? "border border-border rounded-lg overflow-hidden" : "")}>
             <div className={cn(cards ? "p-4 space-y-3" : "px-4 pb-3 space-y-3")}>
               <ToggleWithNumber

@@ -8,13 +8,13 @@ import {
 } from "@/components/ui/select";
 import { Languages } from "lucide-react";
 
-const languages = [
-  { code: "en", label: "English" },
-  { code: "zh", label: "中文" },
-];
-
 export function LanguageSwitcher() {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  const languages = [
+    { code: "en", label: t("language.en") },
+    { code: "zh", label: t("language.zh") },
+  ];
 
   const handleLanguageChange = (value: string) => {
     i18n.changeLanguage(value);
