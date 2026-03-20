@@ -1102,6 +1102,12 @@
     "enableIsolatedWorkspacesDescription": "Show execution workspace controls in project configuration and allow isolated workspace behavior for new and existing issue runs.",
     "toggleAriaLabel": "Toggle isolated workspaces experimental setting"
   },
+  "aiAssistant": {
+    "title": "Paperclip AI Assistant",
+    "description": "Ask me anything about configuration, troubleshooting, or usage.",
+    "welcome": "👋 Hello! I'm your Paperclip AI Assistant. Ask me anything about configuration, troubleshooting, or usage.",
+    "placeholder": "Ask about Paperclip configuration..."
+  },
   "plugin": {
     "manager": {
       "title": "Plugin Manager",

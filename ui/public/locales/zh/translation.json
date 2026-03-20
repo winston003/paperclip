@@ -1102,6 +1102,12 @@
     "enableIsolatedWorkspacesDescription": "在项目配置中显示执行工作区控制，并允许对新的和现有的 Issue 运行启用隔离工作区行为。",
     "toggleAriaLabel": "切换隔离工作区实验性设置"
   },
+  "aiAssistant": {
+    "title": "Paperclip AI 助手",
+    "description": "向我询问任何关于配置、故障排查或使用问题。",
+    "welcome": "👋 你好！我是你的 Paperclip AI 助手。问我任何关于配置、故障排查或使用问题 — 我随时来帮忙！",
+    "placeholder": "询问关于 Paperclip 配置问题..."
+  },
   "plugin": {
     "manager": {
       "title": "插件管理",
