@@ -1171,5 +1171,33 @@
     "remoteRevision": "远端修订 {{rev}}",
     "updated": "更新于 {{time}}",
     "deleteConfirmation": "删除此文档？此操作无法撤销。"
+  },
+  "approval": {
+    "hireAgent": "雇佣代理",
+    "approveCeoStrategy": "批准CEO战略"
+  },
+  "status": {
+    "backlog": "待规划",
+    "todo": "待做",
+    "in_progress": "进行中",
+    "in_review": "审核中",
+    "done": "完成",
+    "cancelled": "已取消",
+    "blocked": "已阻塞"
+  },
+  "priority": {
+    "critical": "严重",
+    "high": "高",
+    "medium": "中",
+    "low": "低"
+  },
+  "inbox": {
+    "runExitedWithError": "运行退出时发生错误。",
+    "errors": "个错误"
+  },
+  "common": {
+    "approve": "批准",
+    "reject": "拒绝",
+    "viewDetails": "查看详情"
   }
 }

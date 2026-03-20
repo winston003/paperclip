@@ -55,53 +55,53 @@ export function ApprovalCard({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {statusIcon(approval.status)}
-          <span className="text-xs text-muted-foreground capitalize">{approval.status}</span>
-          <span className="text-xs text-muted-foreground">· {timeAgo(approval.createdAt)}</span>
-        </div>
+         <div className="flex items-center gap-1.5 shrink-0">
+           {statusIcon(approval.status)}
+           <span className="text-xs text-muted-foreground">{t(`status.${approval.status}`, approval.status)}</span>
+           <span className="text-xs text-muted-foreground">· {timeAgo(approval.createdAt)}</span>
+         </div>
       </div>
 
       {/* Payload */}
       <ApprovalPayloadRenderer type={approval.type} payload={approval.payload} />
 
-      {/* Decision note */}
-      {approval.decisionNote && (
-        <div className="mt-3 text-xs text-muted-foreground italic border-t border-border pt-2">
-          Note: {approval.decisionNote}
-        </div>
-      )}
+       {/* Decision note */}
+       {approval.decisionNote && (
+         <div className="mt-3 text-xs text-muted-foreground italic border-t border-border pt-2">
+           {t("common.note")}: {approval.decisionNote}
+         </div>
+       )}
 
       {/* Actions */}
       {showResolutionButtons && (
         <div className="flex gap-2 mt-4 pt-3 border-t border-border">
-          <Button
-            size="sm"
-            className="bg-green-700 hover:bg-green-600 text-white"
-            onClick={onApprove}
-            disabled={isPending}
-          >
-            Approve
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={onReject}
-            disabled={isPending}
-          >
-            Reject
-          </Button>
+           <Button
+             size="sm"
+             className="bg-green-700 hover:bg-green-600 text-white"
+             onClick={onApprove}
+             disabled={isPending}
+           >
+             {t("common.approve")}
+           </Button>
+           <Button
+             variant="destructive"
+             size="sm"
+             onClick={onReject}
+             disabled={isPending}
+           >
+             {t("common.reject")}
+           </Button>
         </div>
       )}
       <div className="mt-3">
         {detailLink ? (
-          <Button variant="ghost" size="sm" className="text-xs px-0" asChild>
-            <Link to={detailLink}>View details</Link>
-          </Button>
+           <Button variant="ghost" size="sm" className="text-xs px-0" asChild>
+             <Link to={detailLink}>{t("common.viewDetails")}</Link>
+           </Button>
         ) : (
-          <Button variant="ghost" size="sm" className="text-xs px-0" onClick={onOpen}>
-            View details
-          </Button>
+           <Button variant="ghost" size="sm" className="text-xs px-0" onClick={onOpen}>
+             {t("common.viewDetails")}
+           </Button>
         )}
       </div>
     </div>

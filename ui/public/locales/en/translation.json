@@ -1171,5 +1171,33 @@
     "remoteRevision": "Remote revision {{rev}}",
     "updated": "updated {{time}}",
     "deleteConfirmation": "Delete this document? This cannot be undone."
+  },
+  "approval": {
+    "hireAgent": "Hire Agent",
+    "approveCeoStrategy": "Approve CEO Strategy"
+  },
+  "status": {
+    "backlog": "Backlog",
+    "todo": "Todo",
+    "in_progress": "In Progress",
+    "in_review": "In Review",
+    "done": "Done",
+    "cancelled": "Cancelled",
+    "blocked": "Blocked"
+  },
+  "priority": {
+    "critical": "Critical",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "inbox": {
+    "runExitedWithError": "Run exited with an error.",
+    "errors": "errors"
+  },
+  "common": {
+    "approve": "Approve",
+    "reject": "Reject",
+    "viewDetails": "View details"
   }
 }

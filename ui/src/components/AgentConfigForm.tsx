@@ -404,13 +404,13 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
         </div>
       )}
 
-      {/* ---- Identity (edit only) ---- */}
-      {!isCreate && (
-        <div className={cn(!cards && "border-b border-border")}>
-          {cards
-            ? <h3 className="text-sm font-medium mb-3">Identity</h3>
-            : <div className="px-4 py-2 text-xs font-medium text-muted-foreground">Identity</div>
-          }
+       {/* ---- Identity (edit only) ---- */}
+        {!isCreate && (
+          <div className={cn(!cards && "border-b border-border")}>
+            {cards
+              ? <h3 className="text-sm font-medium mb-3">{t('agentConfig.identity')}</h3>
+              : <div className="px-4 py-2 text-xs font-medium text-muted-foreground">{t('agentConfig.identity')}</div>
+            }
           <div className={cn(cards ? "border border-border rounded-lg p-4 space-y-3" : "px-4 pb-3 space-y-3")}>
             <Field label={t('agentConfig.name')} hint={help.name}>
               <DraftInput
@@ -469,12 +469,12 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
       )}
 
       {/* ---- Adapter ---- */}
-      <div className={cn(!cards && (isCreate ? "border-t border-border" : "border-b border-border"))}>
-        <div className={cn(cards ? "flex items-center justify-between mb-3" : "px-4 py-2 flex items-center justify-between gap-2")}>
-          {cards
-            ? <h3 className="text-sm font-medium">Adapter</h3>
-            : <span className="text-xs font-medium text-muted-foreground">Adapter</span>
-          }
+        <div className={cn(!cards && (isCreate ? "border-t border-border" : "border-b border-border"))}>
+          <div className={cn(cards ? "flex items-center justify-between mb-3" : "px-4 py-2 flex items-center justify-between gap-2")}>
+            {cards
+              ? <h3 className="text-sm font-medium">{t('agentConfig.adapter')}</h3>
+              : <span className="text-xs font-medium text-muted-foreground">{t('agentConfig.adapter')}</span>
+            }
           <Button
             type="button"
             variant="outline"
@@ -599,13 +599,13 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
 
       </div>
 
-      {/* ---- Permissions & Configuration ---- */}
+       {/* ---- Permissions & Configuration ---- */}
       {isLocal && (
-        <div className={cn(!cards && "border-b border-border")}>
-           {cards
-             ? <h3 className="text-sm font-medium mb-3">{t('agentConfig.permissionsConfiguration')}</h3>
-             : <div className="px-4 py-2 text-xs font-medium text-muted-foreground">{t('agentConfig.permissionsConfiguration')}</div>
-           }
+         <div className={cn(!cards && "border-b border-border")}>
+            {cards
+             ? <h3 className="text-sm font-medium flex items-center gap-2 mb-3"><Heart className="h-3 w-3" /> {t('agentConfig.permissionsConfiguration')}</h3>
+             : <div className="px-4 py-2 text-xs font-medium text-muted-foreground flex items-center gap-2"><Heart className="h-3 w-3" /> {t('agentConfig.permissionsConfiguration')}</div>
+             }
           <div className={cn(cards ? "border border-border rounded-lg p-4 space-y-3" : "px-4 pb-3 space-y-3")}>
               <Field label={t('agentConfig.command')} hint={help.localCommand}>
                 <DraftInput
@@ -785,10 +785,10 @@ export function AgentConfigForm(props: AgentConfigFormProps) {
       {/* ---- Run Policy ---- */}
       {isCreate ? (
         <div className={cn(!cards && "border-b border-border")}>
-          {cards
-            ? <h3 className="text-sm font-medium flex items-center gap-2 mb-3"><Heart className="h-3 w-3" /> Run Policy</h3>
-            : <div className="px-4 py-2 text-xs font-medium text-muted-foreground flex items-center gap-2"><Heart className="h-3 w-3" /> Run Policy</div>
-          }
+           {cards
+             ? <h3 className="text-sm font-medium flex items-center gap-2 mb-3"><Heart className="h-3 w-3" /> {t('agentConfig.runPolicy')}</h3>
+             : <div className="px-4 py-2 text-xs font-medium text-muted-foreground flex items-center gap-2"><Heart className="h-3 w-3" /> {t('agentConfig.runPolicy')}</div>
+             }
           <div className={cn(cards ? "border border-border rounded-lg p-4 space-y-3" : "px-4 pb-3 space-y-3")}>
             <ToggleWithNumber
               label={t('agentConfig.heartbeatOnInterval')}

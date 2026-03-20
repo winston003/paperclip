@@ -79,8 +79,8 @@ function firstNonEmptyLine(value: string | null | undefined): string | null {
   return line ?? null;
 }
 
-function runFailureMessage(run: HeartbeatRun): string {
-  return firstNonEmptyLine(run.error) ?? firstNonEmptyLine(run.stderrExcerpt) ?? "Run exited with an error.";
+function runFailureMessage(run: HeartbeatRun, t: (key: string) => string): string {
+  return firstNonEmptyLine(run.error) ?? firstNonEmptyLine(run.stderrExcerpt) ?? t("inbox.runExitedWithError");
 }
 
 function readIssueIdFromRun(run: HeartbeatRun): string | null {
@@ -116,7 +116,7 @@ function FailedRunCard({
   const issue = issueId ? issueById.get(issueId) ?? null : null;
   const sourceKey = RUN_SOURCE_LABELS_KEYS[run.invocationSource] ?? "inbox.manual";
   const sourceLabel = t(sourceKey);
-  const displayError = runFailureMessage(run);
+  const displayError = runFailureMessage(run, t);
 
   const retryRun = useMutation({
     mutationFn: async () => {
@@ -767,10 +767,10 @@ export function Inbox() {
                     className="flex flex-1 cursor-pointer items-center gap-3 no-underline text-inherit"
                   >
                     <AlertTriangle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
-                    <span className="text-sm">
-                      <span className="font-medium">{dashboard!.agents.error}</span>{" "}
-                      {dashboard!.agents.error === 1 ? t("inbox.agentHasErrors") : t("inbox.agentsHaveErrors")} errors
-                    </span>
+                     <span className="text-sm">
+                       <span className="font-medium">{dashboard!.agents.error}</span>{" "}
+                       {dashboard!.agents.error === 1 ? t("inbox.agentHasErrors") : t("inbox.agentsHaveErrors")} {t("inbox.errors")}
+                     </span>
                   </Link>
                   <button
                     type="button"
