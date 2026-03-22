@@ -41,6 +41,9 @@ importers:
       '@paperclipai/adapter-gemini-local':
         specifier: workspace:*
         version: link:../packages/adapters/gemini-local
+      '@paperclipai/adapter-knowledge-refiner':
+        specifier: workspace:*
+        version: link:../packages/adapters/knowledge-refiner
       '@paperclipai/adapter-openclaw-gateway':
         specifier: workspace:*
         version: link:../packages/adapters/openclaw-gateway

@@ -100,7 +100,7 @@ async function ensureGeminiSkillsInjected(
   }
   const removedSkills = await removeMaintainerOnlySkillSymlinks(
     skillsHome,
-    skillsEntries.map((entry) => entry.name),
+    skillsEntries.map((entry) => entry.key),
   );
   for (const skillName of removedSkills) {
     await onLog(
@@ -110,19 +110,19 @@ async function ensureGeminiSkillsInjected(
   }
 
   for (const entry of skillsEntries) {
-    const target = path.join(skillsHome, entry.name);
+    const target = path.join(skillsHome, entry.key);
 
     try {
       const result = await ensurePaperclipSkillSymlink(entry.source, target);
       if (result === "skipped") continue;
       await onLog(
         "stderr",
-        `[paperclip] ${result === "repaired" ? "Repaired" : "Linked"} Gemini skill: ${entry.name}\n`,
+        `[paperclip] ${result === "repaired" ? "Repaired" : "Linked"} Gemini skill: ${entry.key}\n`,
       );
     } catch (err) {
       await onLog(
         "stderr",
-        `[paperclip] Failed to link Gemini skill "${entry.name}": ${err instanceof Error ? err.message : String(err)}\n`,
+        `[paperclip] Failed to link Gemini skill "${entry.key}": ${err instanceof Error ? err.message : String(err)}\n`,
       );
     }
   }
